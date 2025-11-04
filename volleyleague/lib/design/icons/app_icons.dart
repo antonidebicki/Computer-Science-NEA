@@ -7,7 +7,7 @@ class AppIcons {
 
   static Widget volleyball({double fontSize = 24, Color? color, FontWeight? fontWeight}) =>
     SFIcon(
-      SFIcons.sf_sportscourt,
+      SFIcons.sf_volleyball,
       fontSize: fontSize,
       color: color,
       fontWeight: fontWeight,
