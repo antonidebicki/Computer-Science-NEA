@@ -17,7 +17,17 @@ class AppTheme {
       useMaterial3: true,
       brightness: brightness,
       colorScheme: colorScheme,
-      fontFamily: 'Roboto',
+      fontFamily: '.SF Pro Text',
+      fontFamilyFallback: [
+        '.SF Pro Display',
+        'SF Pro Text',
+        'SF Pro Display',
+        'San Francisco',
+        'Helvetica Neue',
+        'Helvetica',
+        'Arial',
+        'sans-serif',
+      ],
       scaffoldBackgroundColor:
           isDark ? const Color(0xFF121212) : AppColors.background,
       appBarTheme: AppBarTheme(
