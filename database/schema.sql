@@ -1,7 +1,4 @@
--- PostgreSQL schema for the VolleyLeague Application
--- This schema combines league management features with detailed, volleyball-specific match tracking.
-
--- Drop tables in reverse order of dependency to avoid foreign key constraint errors.
+-- Drop tables in reverse order of dependency.
 DROP TABLE IF EXISTS "Payments" CASCADE;
 DROP TABLE IF EXISTS "LeagueStandings" CASCADE;
 DROP TABLE IF EXISTS "Substitutions" CASCADE;
@@ -40,7 +37,6 @@ CREATE TABLE "Users" (
 CREATE TABLE "Teams" (
   team_id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
-  -- A team is created by a user, typically a coach or admin.
   created_by_user_id INT NOT NULL,
   logo_url TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -63,7 +59,6 @@ CREATE TABLE "Leagues" (
 CREATE TABLE "TeamMembers" (
   team_id INT NOT NULL,
   user_id INT NOT NULL,
-  -- e.g., Player number, coach title.
   role_in_team VARCHAR(100) DEFAULT 'Player',
   player_number INT,
   is_captain BOOLEAN DEFAULT FALSE,
@@ -76,7 +71,7 @@ CREATE TABLE "TeamMembers" (
 CREATE TABLE "Seasons" (
   season_id SERIAL PRIMARY KEY,
   league_id INT NOT NULL,
-  name VARCHAR(255) NOT NULL, -- e.g., "2024-2025 Season"
+  name VARCHAR(255) NOT NULL,
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
   is_archived BOOLEAN DEFAULT FALSE,

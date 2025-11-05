@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
 import '../../../design/index.dart';
+import '../../../state/providers/theme_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -37,7 +39,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           height: 300,
           decoration: BoxDecoration(
             color: CupertinoColors.systemBackground.resolveFrom(context),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(Spacing.md)),
           ),
           child: Column(
             children: [
@@ -88,69 +90,64 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDark;
+    
     return CupertinoPageScaffold(
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              CupertinoColors.systemBlue.withOpacity(0.4),
-              CupertinoColors.systemPurple.withOpacity(0.4),
-            ],
-          ),
+          gradient: AppGradients.backgroundGradient(context, isDark: isDark),
         ),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
               child: AppGlassContainer(
                 width: 370,
-                padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-                borderRadius: 24,
-                blur: 20,
-                color: CupertinoColors.white.withOpacity(0.25),
-                borderColor: CupertinoColors.white.withOpacity(0.3),
+                padding: const EdgeInsets.symmetric(vertical: Spacing.xxl, horizontal: Spacing.xl),
+                borderRadius: Spacing.xl,
+                blur: Spacing.xl,
+                color: CupertinoColors.white.withValues(alpha: 0.25),
+                borderColor: CupertinoColors.white.withValues(alpha: 0.3),
                 child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Spacing.sm),
                   Row(
                     children: [
                       CupertinoButton(
                         padding: EdgeInsets.zero,
-                        onPressed: () => Navigator.of(context).maybePop(),
-                        child: const Icon(CupertinoIcons.back, size: 28), minimumSize: Size(0, 0),
+                        onPressed: () => Navigator.of(context).maybePop(), minimumSize: Size(0, 0),
+                        child: const Icon(CupertinoIcons.back, size: 28),
                       ),
                       const Spacer(),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Spacing.sm),
                   Text(
                     'Register',
                     style: CupertinoTheme.of(context).textTheme.navLargeTitleTextStyle.copyWith(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: Spacing.xs),
                   Text(
                     'Create an account to continue!',
                     style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(color: CupertinoColors.systemGrey),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: Spacing.xl),
                   AppTextField(
                     controller: firstNameController,
                     placeholder: 'First Name',
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: Spacing.md),
                   AppTextField(
                     controller: lastNameController,
                     placeholder: 'Last Name',
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: Spacing.md),
                   AppTextField(
                     controller: emailController,
                     placeholder: 'Email',
                     keyboardType: TextInputType.emailAddress,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: Spacing.md),
                   GestureDetector(
                     onTap: _pickDate,
                     child: AbsorbPointer(
@@ -158,22 +155,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         controller: dobController,
                         placeholder: 'DD/MM/YYYY',
                         suffix: const Padding(
-                          padding: EdgeInsets.only(right: 8.0),
+                          padding: EdgeInsets.only(right: Spacing.sm),
                           child: Icon(CupertinoIcons.calendar, color: CupertinoColors.systemGrey),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: Spacing.md),
                   AppPasswordField(controller: passwordController),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: Spacing.lg),
                   AppRoleSelector(
                     selectedRole: selectedRole,
                     onChanged: (role) => setState(() => selectedRole = role),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: Spacing.xl),
                   AppPrimaryButton(onPressed: () {}, child: const Text('Register')),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: Spacing.xl),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

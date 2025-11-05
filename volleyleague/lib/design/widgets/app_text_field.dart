@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../tokens/spacing.dart';
 
 /// Standard Cupertino text field
 class AppTextField extends StatelessWidget {
@@ -21,7 +22,7 @@ class AppTextField extends StatelessWidget {
       controller: controller,
       placeholder: placeholder,
       keyboardType: keyboardType,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: Spacing.lg, horizontal: Spacing.lg),
       decoration: BoxDecoration(
         color: CupertinoColors.systemGrey6,
         borderRadius: BorderRadius.circular(10),
@@ -55,7 +56,7 @@ class _AppPasswordFieldState extends State<AppPasswordField> {
       controller: widget.controller,
       placeholder: widget.placeholder ?? 'Password',
       obscureText: _obscure,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: Spacing.lg, horizontal: Spacing.lg),
       decoration: BoxDecoration(
         color: CupertinoColors.systemGrey6,
         borderRadius: BorderRadius.circular(10),
@@ -63,7 +64,7 @@ class _AppPasswordFieldState extends State<AppPasswordField> {
       suffix: GestureDetector(
         onTap: () => setState(() => _obscure = !_obscure),
         child: Padding(
-          padding: const EdgeInsets.only(right: 8.0),
+          padding: const EdgeInsets.only(right: Spacing.sm),
           child: Icon(
             _obscure ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
             color: CupertinoColors.systemGrey,

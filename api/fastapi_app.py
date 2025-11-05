@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 
 import asyncpg
 from fastapi import FastAPI
@@ -19,22 +20,21 @@ def _pg_dsn() -> dict:
       "port": int(os.environ.get("PGPORT", 5432)),
       "user": os.environ.get("PGUSER", "postgres"),
       "password": os.environ.get("PGPASSWORD"),
-      "database": os.environ.get("PGDATABASE", "volleyleague"),
+      "database": os.environ.get("PGDATABASE", "antonidebicki"),
       "ssl": os.environ.get("PGSSLMODE") == "require",
   }
 
 
-app = FastAPI(title="VolleyLeague API")
-
-
-@app.on_event("startup")
-async def startup_event() -> None:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+  # Startup: create the database connection pool
   app.state.pool = await asyncpg.create_pool(**_pg_dsn())
-
-
-@app.on_event("shutdown")
-async def shutdown_event() -> None:
+  yield
+  # Shutdown: close the database connection pool
   await app.state.pool.close()
+
+
+app = FastAPI(title="VolleyLeague API", lifespan=lifespan)
 
 
 app.include_router(get_users_router)

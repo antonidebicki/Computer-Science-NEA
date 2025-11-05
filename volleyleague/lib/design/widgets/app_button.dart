@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
+import '../tokens/spacing.dart';
 
 /// Primary filled button with liquid glass effect (Cupertino style)
 class AppPrimaryButton extends StatelessWidget {
@@ -20,18 +21,18 @@ class AppPrimaryButton extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  CupertinoColors.activeBlue.withOpacity(0.8),
-                  CupertinoColors.activeBlue.withOpacity(0.6),
+                  CupertinoColors.activeBlue.withValues(alpha: 0.8),
+                  CupertinoColors.activeBlue.withValues(alpha: 0.6),
                 ],
               ),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
-                color: CupertinoColors.white.withOpacity(0.3),
+                color: CupertinoColors.white.withValues(alpha: 0.3),
                 width: 1.5,
               ),
             ),
             child: CupertinoButton(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: Spacing.lg),
               onPressed: onPressed,
               child: DefaultTextStyle.merge(
                 style: const TextStyle(
@@ -66,15 +67,15 @@ class AppTonalButton extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             decoration: BoxDecoration(
-              color: CupertinoColors.systemGrey6.withOpacity(0.6),
+              color: CupertinoColors.systemGrey6.withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
-                color: CupertinoColors.white.withOpacity(0.3),
+                color: CupertinoColors.white.withValues(alpha: 0.3),
                 width: 1.5,
               ),
             ),
             child: CupertinoButton(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: Spacing.lg),
               onPressed: onPressed,
               child: DefaultTextStyle.merge(
                 style: const TextStyle(
@@ -103,8 +104,8 @@ class AppTextButtonX extends StatelessWidget {
   Widget build(BuildContext context) {
     return CupertinoButton(
       padding: EdgeInsets.zero,
-      onPressed: onPressed,
-      child: child, minimumSize: Size(0, 0),
+      onPressed: onPressed, minimumSize: Size(0, 0),
+      child: child,
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
+import '../tokens/spacing.dart';
 
 /// Apple-style liquid glass segmented control for role selection
 class AppRoleSelector extends StatelessWidget {
@@ -17,22 +18,22 @@ class AppRoleSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(12), // Keeping as 12 - specific to component design
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // Blur effect - keeping as is
         child: Container(
           decoration: BoxDecoration(
-            color: CupertinoColors.systemGrey6.withOpacity(0.5),
+            color: CupertinoColors.systemGrey6.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: CupertinoColors.white.withOpacity(0.3),
+              color: CupertinoColors.white.withValues(alpha: 0.3),
               width: 1.5,
             ),
           ),
-          padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(Spacing.xs),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              const double gap = 4; // spacing between items
+              const double gap = Spacing.xs;
               final int n = roles.length;
               final double totalGaps = gap * (n - 1);
               final double segmentWidth = (constraints.maxWidth - totalGaps) / n;
@@ -52,11 +53,11 @@ class AppRoleSelector extends StatelessWidget {
                       width: segmentWidth,
                       child: DecoratedBox(
                         decoration: ShapeDecoration(
-                          color: CupertinoColors.white.withOpacity(0.85),
+                          color: CupertinoColors.white.withValues(alpha: 0.85),
                           shape: ContinuousRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                             side: BorderSide(
-                              color: CupertinoColors.white.withOpacity(0.35),
+                              color: CupertinoColors.white.withValues(alpha: 0.35),
                               width: 1.2,
                             ),
                           ),
@@ -80,7 +81,7 @@ class AppRoleSelector extends StatelessWidget {
                                 style: TextStyle(
                                   color: i == selectedIndex
                                       ? CupertinoColors.activeBlue
-                                      : CupertinoColors.black.withOpacity(0.6),
+                                      : CupertinoColors.black.withValues(alpha: 0.6),
                                   fontWeight: FontWeight.w600,
                                   fontSize: 15,
                                 ),

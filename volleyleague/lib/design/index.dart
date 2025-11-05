@@ -5,6 +5,7 @@ export 'tokens/text_styles.dart';
 export 'tokens/radii.dart';
 export 'tokens/shadows.dart';
 export 'tokens/durations.dart';
+export 'tokens/gradients.dart';
 
 export 'theme/app_theme.dart';
 export 'theme/light_theme.dart';
