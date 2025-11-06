@@ -1,4 +1,3 @@
-# Miscellaneous
 *.class
 *.lock
 *.log
@@ -6,11 +5,15 @@
 *.swp
 .buildlog/
 .history
+# Secrets folder
+secrets/
 
 # Project documentation (excluded from version control)
 DEV_STAGES.md
 NEA_Report.md
 VOLLEYLEAGUE_CODING_TODO.md
+TESTING.md
+
 
 
 

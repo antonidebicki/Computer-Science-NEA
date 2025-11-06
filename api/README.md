@@ -37,6 +37,33 @@ uvicorn api.fastapi_app:app --reload
 # Interactive docs at http://localhost:8000/docs
 ```
 
+## Authentication
+
+The API includes JWT-based authentication with the following features:
+
+### Login Endpoint
+- **POST** `/api/login?username=<username>&password=<password>`
+- Returns: `{"access_token": "<jwt>", "token_type": "bearer"}`
+- Token payload includes: `user_id`, `role`, and `sub` (username)
+
+### Token Usage
+Include the token in requests:
+```
+Authorization: Bearer <access_token>
+```
+
+### Testing Authentication
+See [TESTING.md](./TESTING.md) for comprehensive testing instructions.
+
+Quick tests:
+```bash
+# Test auth functions and database integration
+python3 api/test_auth.py
+
+# Test login endpoint (requires running server)
+./api/test_login.sh <username> <password>
+```
+
 ## Adding New Endpoints
 
 1. Create/update router file in `api/routes/`
