@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, Request, status
-from .models import TeamOut, TeamCreate
+from api.core.models import TeamOut, TeamCreate
 
 router = APIRouter()
 

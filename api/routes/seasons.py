@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, Request, status
-from .models import SeasonOut, SeasonCreate
+from api.core.models import SeasonOut, SeasonCreate
 
 router = APIRouter()
 

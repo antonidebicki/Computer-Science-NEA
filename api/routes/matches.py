@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, Request, status
-from .models import MatchOut, MatchCreate
+from api.core.models import MatchOut, MatchCreate
 
 router = APIRouter()
 

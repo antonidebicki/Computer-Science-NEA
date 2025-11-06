@@ -1,10 +1,34 @@
+from typing import List
 import asyncpg
 from asyncpg import UniqueViolationError
 from fastapi import APIRouter, HTTPException, Request, status
-
-from .models import UserCreate, UserOut
+from api.core.models import UserCreate, UserOut
 
 router = APIRouter()
+
+
+@router.get("/users", response_model=List[UserOut])
+async def list_users(request: Request) -> List[UserOut]:
+  pool = request.app.state.pool
+  async with pool.acquire() as connection:
+    rows = await connection.fetch(
+        """
+        SELECT user_id, username, email, full_name, role, created_at
+        FROM "Users"
+        ORDER BY user_id;
+        """
+    )
+  return [
+      UserOut(
+          user_id=row["user_id"],
+          username=row["username"],
+          email=row["email"],
+          full_name=row["full_name"],
+          role=row["role"],
+          created_at=row["created_at"],
+      )
+      for row in rows
+  ]
 
 
 @router.post("/users", response_model=UserOut, status_code=status.HTTP_201_CREATED)

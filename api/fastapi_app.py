@@ -4,12 +4,11 @@ from contextlib import asynccontextmanager
 import asyncpg
 from fastapi import FastAPI
 
-from .get_users_endpoint import router as get_users_router
-from .post_user_endpoint import router as post_user_router
-from .teams_endpoints import router as teams_router
-from .leagues_endpoints import router as leagues_router
-from .seasons_endpoints import router as seasons_router
-from .matches_endpoints import router as matches_router
+from api.routes.users import router as users_router
+from api.routes.teams import router as teams_router
+from api.routes.leagues import router as leagues_router
+from api.routes.seasons import router as seasons_router
+from api.routes.matches import router as matches_router
 
 
 
@@ -37,10 +36,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="VolleyLeague API", lifespan=lifespan)
 
 
-app.include_router(get_users_router)
-app.include_router(post_user_router)
-app.include_router(teams_router)
-app.include_router(leagues_router)
-app.include_router(seasons_router)
-app.include_router(matches_router)
+app.include_router(users_router, prefix="/api", tags=["users"])
+app.include_router(teams_router, prefix="/api", tags=["teams"])
+app.include_router(leagues_router, prefix="/api", tags=["leagues"])
+app.include_router(seasons_router, prefix="/api", tags=["seasons"])
+app.include_router(matches_router, prefix="/api", tags=["matches"])
 

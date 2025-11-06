@@ -90,7 +90,6 @@ class ScreenSelector extends StatelessWidget {
 
   /// Create test data for the League Standings screen
   Widget _buildLeagueStandingsWithTestData() {
-    // Create test league
     final league = League(
       leagueId: 1,
       name: 'U18 National Volleyball League',
@@ -100,7 +99,6 @@ class ScreenSelector extends StatelessWidget {
       createdAt: DateTime(2024, 1, 15),
     );
 
-    // Create test season
     final season = Season(
       seasonId: 1,
       leagueId: 1,
@@ -110,7 +108,6 @@ class ScreenSelector extends StatelessWidget {
       isArchived: false,
     );
 
-    // Create test teams
     final teams = {
       1: Team(
         teamId: 1,
@@ -121,56 +118,54 @@ class ScreenSelector extends StatelessWidget {
       ),
       2: Team(
         teamId: 2,
-        name: 'Ace Volley Warriors',
+        name: 'Richmond VC',
         createdByUserId: 2,
         logoUrl: null,
         createdAt: DateTime(2024, 1, 21),
       ),
       3: Team(
         teamId: 3,
-        name: 'Net Crushers',
+        name: 'MK City',
         createdByUserId: 3,
         logoUrl: null,
         createdAt: DateTime(2024, 1, 22),
       ),
       4: Team(
         teamId: 4,
-        name: 'Spike Masters United',
+        name: 'Leeds Gorse',
         createdByUserId: 4,
         logoUrl: null,
         createdAt: DateTime(2024, 1, 23),
       ),
       5: Team(
         teamId: 5,
-        name: 'Block Party FC',
+        name: 'Newcastle Knights',
         createdByUserId: 5,
         logoUrl: null,
         createdAt: DateTime(2024, 1, 24),
       ),
       6: Team(
         teamId: 6,
-        name: 'Serve City Athletics',
+        name: 'Liverpool VC',
         createdByUserId: 6,
         logoUrl: null,
         createdAt: DateTime(2024, 1, 25),
       ),
       7: Team(
         teamId: 7,
-        name: 'Rally Raptors',
+        name: 'Essex Rebels',
         createdByUserId: 7,
         logoUrl: null,
         createdAt: DateTime(2024, 1, 26),
       ),
       8: Team(
         teamId: 8,
-        name: 'Court Kings',
+        name: 'Willesden Titans',
         createdByUserId: 8,
         logoUrl: null,
         createdAt: DateTime(2024, 1, 27),
       ),
     };
-
-    // Create test standings with realistic data
     final standings = [
       LeagueStanding(
         standingId: 1,
@@ -183,7 +178,7 @@ class ScreenSelector extends StatelessWidget {
         setsLost: 12,
         pointsWon: 1056,
         pointsLost: 856,
-        leaguePoints: 36, // 3 points per win
+        leaguePoints: 36,
       ),
       LeagueStanding(
         standingId: 2,
