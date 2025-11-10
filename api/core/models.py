@@ -1,6 +1,59 @@
 from datetime import datetime
-from typing import Optional, Annotated
-from pydantic import BaseModel, EmailStr, constr
+from typing import Optional, Annotated, Literal
+from pydantic import BaseModel, EmailStr, Field, constr, field_validator
+
+class LoginRequest(BaseModel):
+    username: Annotated[str, constr(strip_whitespace=True, min_length=1)]
+    password: Annotated[str, constr(min_length=1)]
+
+
+class UserInfo(BaseModel):
+    user_id: int
+    username: str
+    email: EmailStr
+    full_name: Optional[str]
+    role: str
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    user: UserInfo
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+class RegisterRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    email: EmailStr
+    password: str = Field(..., max_length=128)
+    full_name: str = Field(..., max_length=100)
+    role: Literal["PLAYER", "COACH", "ADMIN"] = Field(...)
+    
+    @field_validator('username', 'full_name', 'email', mode='before')
+    @classmethod
+    def _strip_strings(cls, v):
+        if isinstance(v, str):
+            v = v.strip()
+            if v == '':
+                raise ValueError('must not be empty or only whitespace')
+        return v
+
+    @field_validator('password')
+    @classmethod
+    def _validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('password must be at least 8 characters long')
+        if not any(c.islower() for c in v):
+            raise ValueError('password must contain a lowercase letter')
+        if not any(c.isupper() for c in v):
+            raise ValueError('password must contain an uppercase letter')
+        if not any(c.isdigit() for c in v):
+            raise ValueError('password must contain a digit')
+        return v 
 
 
 class UserOut(BaseModel):

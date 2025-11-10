@@ -19,7 +19,7 @@ if env_path.exists():
                 os.environ[key] = value
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from api.core.auth import AuthUtils
+from api.authentication.auth import AuthUtils
 
 API_BASE_URL = "http://localhost:8000"
 
@@ -85,6 +85,7 @@ def test_login_endpoint():
             print(f"   ✓ Login successful")
             print(f"   Access Token: {data['access_token'][:50]}...")
             print(f"   Token Type: {data['token_type']}")
+            assert 'refresh_token' in data, 'refresh_token missing in response'
             
             # Decode the token to verify contents
             token = data['access_token']
@@ -98,6 +99,22 @@ def test_login_endpoint():
             assert decoded['user_id'] == user['user_id'], "User ID mismatch in token"
             assert decoded['role'] == 'PLAYER', "Role mismatch in token"
             print(f"   ✓ Token payload verified correctly")
+            
+            # Test refresh flow
+            print("\n3. Testing refresh token flow...")
+            refresh_resp = requests.post(
+                f"{API_BASE_URL}/api/refresh",
+                json={"refresh_token": data['refresh_token']}
+            )
+            if refresh_resp.status_code == 200:
+                refreshed = refresh_resp.json()
+                print("   ✓ Refresh successful, new access token issued")
+                new_decoded = AuthUtils.decode_access_token(f"Bearer {refreshed['access_token']}")
+                assert new_decoded['sub'] == 'api_test_user'
+                print("   ✓ Refreshed token decoded correctly")
+            else:
+                print(f"   ✗ Refresh failed: {refresh_resp.status_code} -> {refresh_resp.text}")
+                return False
         else:
             print(f"   ✗ Login failed with status {response.status_code}")
             print(f"   Response: {response.text}")

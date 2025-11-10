@@ -43,14 +43,26 @@ The API includes JWT-based authentication with the following features:
 
 ### Login Endpoint
 - **POST** `/api/login?username=<username>&password=<password>`
-- Returns: `{"access_token": "<jwt>", "token_type": "bearer"}`
+- Returns: `{"access_token": "<jwt>", "refresh_token": "<jwt>", "token_type": "bearer"}`
 - Token payload includes: `user_id`, `role`, and `sub` (username)
 
-### Token Usage
+### Token Usage (Access Token)
 Include the token in requests:
 ```
 Authorization: Bearer <access_token>
 ```
+
+### Refreshing Tokens (So users don't re-login every 24h)
+
+- Access tokens expire after 24h by default.
+- Clients should store the long-lived `refresh_token` and call:
+    - **POST** `/api/refresh` with body: `{ "refresh_token": "<refresh>" }`
+    - Response: new `access_token` and `refresh_token` pair.
+    - Rotate stored refresh token each time.
+
+Environment variables:
+- `SECRET_KEY` signs access tokens (24h default)
+- `REFRESH_SECRET_KEY` (optional) signs refresh tokens (30 days default). Falls back to `SECRET_KEY`.
 
 ### Testing Authentication
 See [TESTING.md](./TESTING.md) for comprehensive testing instructions.

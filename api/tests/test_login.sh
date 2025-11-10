@@ -20,7 +20,18 @@ echo "Testing login for user: $USERNAME"
 echo "API URL: $API_URL"
 echo ""
 
-response=$(curl -s -w "\n%{http_code}" -X POST "$API_URL?username=$USERNAME&password=$PASSWORD")
+# Create JSON payload
+JSON_PAYLOAD=$(cat <<EOF
+{
+  "username": "$USERNAME",
+  "password": "$PASSWORD"
+}
+EOF
+)
+
+response=$(curl -s -w "\n%{http_code}" -X POST "$API_URL" \
+  -H "Content-Type: application/json" \
+  -d "$JSON_PAYLOAD")
 
 http_code=$(echo "$response" | tail -n1)
 body=$(echo "$response" | head -n-1)

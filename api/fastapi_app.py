@@ -10,6 +10,8 @@ from api.routes.leagues import router as leagues_router
 from api.routes.seasons import router as seasons_router
 from api.routes.matches import router as matches_router
 from api.routes.auth import router as auth_router
+from api.routes.register import router as register_router
+from api.routes.login import router as login_router
 
 
 
@@ -36,7 +38,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="VolleyLeague API", lifespan=lifespan)
 
-
-
+# Authentication routes
+app.include_router(login_router, prefix="/api", tags=["auth"])
 app.include_router(auth_router, prefix="/api", tags=["auth"])
+app.include_router(register_router, prefix="/api/auth", tags=["auth"])
+
+# Entity routes
+app.include_router(users_router, prefix="/api", tags=["users"])
+app.include_router(teams_router, prefix="/api", tags=["teams"])
+app.include_router(leagues_router, prefix="/api", tags=["leagues"])
+app.include_router(seasons_router, prefix="/api", tags=["seasons"])
+app.include_router(matches_router, prefix="/api", tags=["matches"])
 

@@ -1,12 +1,13 @@
 from typing import List
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, status, Depends
 from api.core.models import TeamOut, TeamCreate
+from api.authentication.auth import AuthUtils
 
 router = APIRouter()
 
 
 @router.get("/teams", response_model=List[TeamOut])
-async def list_teams(request: Request) -> List[TeamOut]:
+async def list_teams(request: Request, user: dict = Depends(AuthUtils.get_current_user)) -> List[TeamOut]:
     pool = request.app.state.pool
     async with pool.acquire() as connection:
         rows = await connection.fetch(
@@ -20,7 +21,7 @@ async def list_teams(request: Request) -> List[TeamOut]:
 
 
 @router.get("/teams/{team_id}", response_model=TeamOut)
-async def get_team(request: Request, team_id: int) -> TeamOut:
+async def get_team(request: Request, team_id: int, user: dict = Depends(AuthUtils.get_current_user)) -> TeamOut:
     pool = request.app.state.pool
     async with pool.acquire() as connection:
         row = await connection.fetchrow(
@@ -37,7 +38,7 @@ async def get_team(request: Request, team_id: int) -> TeamOut:
 
 
 @router.post("/teams", response_model=TeamOut, status_code=status.HTTP_201_CREATED)
-async def create_team(request: Request, payload: TeamCreate) -> TeamOut:
+async def create_team(request: Request, payload: TeamCreate, user: dict = Depends(AuthUtils.require_role(["COACH", "ADMIN"]))) -> TeamOut:
     pool = request.app.state.pool
     async with pool.acquire() as connection:
         try:

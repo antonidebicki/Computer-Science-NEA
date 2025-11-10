@@ -1,12 +1,13 @@
 from typing import List
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, status, Depends
 from api.core.models import SeasonOut, SeasonCreate
+from api.authentication.auth import AuthUtils
 
 router = APIRouter()
 
 
 @router.get("/seasons", response_model=List[SeasonOut])
-async def list_seasons(request: Request) -> List[SeasonOut]:
+async def list_seasons(request: Request, user: dict = Depends(AuthUtils.get_current_user)) -> List[SeasonOut]:
     pool = request.app.state.pool
     async with pool.acquire() as connection:
         rows = await connection.fetch(
@@ -20,7 +21,7 @@ async def list_seasons(request: Request) -> List[SeasonOut]:
 
 
 @router.get("/seasons/{season_id}", response_model=SeasonOut)
-async def get_season(request: Request, season_id: int) -> SeasonOut:
+async def get_season(request: Request, season_id: int, user: dict = Depends(AuthUtils.get_current_user)) -> SeasonOut:
     pool = request.app.state.pool
     async with pool.acquire() as connection:
         row = await connection.fetchrow(
@@ -37,7 +38,7 @@ async def get_season(request: Request, season_id: int) -> SeasonOut:
 
 
 @router.post("/seasons", response_model=SeasonOut, status_code=status.HTTP_201_CREATED)
-async def create_season(request: Request, payload: SeasonCreate) -> SeasonOut:
+async def create_season(request: Request, payload: SeasonCreate, user: dict = Depends(AuthUtils.require_role(["ADMIN"]))) -> SeasonOut:
     pool = request.app.state.pool
     async with pool.acquire() as connection:
         try:

@@ -1,12 +1,13 @@
 from typing import List
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, status, Depends
 from api.core.models import MatchOut, MatchCreate
+from api.authentication.auth import AuthUtils
 
 router = APIRouter()
 
 
 @router.get("/matches", response_model=List[MatchOut])
-async def list_matches(request: Request) -> List[MatchOut]:
+async def list_matches(request: Request, user: dict = Depends(AuthUtils.get_current_user)) -> List[MatchOut]:
     pool = request.app.state.pool
     async with pool.acquire() as connection:
         rows = await connection.fetch(
@@ -21,7 +22,7 @@ async def list_matches(request: Request) -> List[MatchOut]:
 
 
 @router.get("/matches/{match_id}", response_model=MatchOut)
-async def get_match(request: Request, match_id: int) -> MatchOut:
+async def get_match(request: Request, match_id: int, user: dict = Depends(AuthUtils.get_current_user)) -> MatchOut:
     pool = request.app.state.pool
     async with pool.acquire() as connection:
         row = await connection.fetchrow(
@@ -39,7 +40,7 @@ async def get_match(request: Request, match_id: int) -> MatchOut:
 
 
 @router.post("/matches", response_model=MatchOut, status_code=status.HTTP_201_CREATED)
-async def create_match(request: Request, payload: MatchCreate) -> MatchOut:
+async def create_match(request: Request, payload: MatchCreate, user: dict = Depends(AuthUtils.require_role(["ADMIN"]))) -> MatchOut:
     pool = request.app.state.pool
     async with pool.acquire() as connection:
         try:
