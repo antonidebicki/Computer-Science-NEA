@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Annotated, Literal
+from typing import Optional, Annotated, Literal, List
 from pydantic import BaseModel, EmailStr, Field, constr, field_validator
 
 class LoginRequest(BaseModel):
@@ -138,4 +138,20 @@ class MatchCreate(BaseModel):
     away_team_id: int
     match_datetime: Optional[datetime] = None
     venue: Optional[Annotated[str, constr(strip_whitespace=True, min_length=1)]] = None
+
+
+class GenerateFixturesRequest(BaseModel):
+    start_date: str  # Format: "YYYY-MM-DD"
+    matches_per_week_per_team: int = 1
+    weeks_between_matches: int = 1
+    double_round_robin: bool = False
+    allowed_weekdays: Optional[List[int]] = None  # [Mon, Tue, Wed, Thu, Fri, Sat, Sun] as 0s and 1s
+
+
+class GenerateFixturesResponse(BaseModel):
+    matches_created: int
+    start_date: str
+    end_date: str
+    season_id: int
+    message: str
     status: str = "SCHEDULED"

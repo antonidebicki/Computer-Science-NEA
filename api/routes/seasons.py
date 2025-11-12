@@ -1,7 +1,9 @@
 from typing import List
+import datetime
 from fastapi import APIRouter, HTTPException, Request, status, Depends
-from api.core.models import SeasonOut, SeasonCreate
+from api.core.models import SeasonOut, SeasonCreate, GenerateFixturesRequest, GenerateFixturesResponse
 from api.authentication.auth import AuthUtils
+from api.core.fixture_generator import generate_round_robin, assign_match_dates
 
 router = APIRouter()
 
@@ -59,3 +61,117 @@ async def create_season(request: Request, payload: SeasonCreate, user: dict = De
                 detail="Failed to create season.",
             ) from exc
     return SeasonOut(**row)
+
+
+@router.post("/seasons/{season_id}/generate-fixtures", response_model=GenerateFixturesResponse, status_code=status.HTTP_201_CREATED)
+async def generate_fixtures(
+    request: Request, 
+    season_id: int, 
+    payload: GenerateFixturesRequest,
+    user: dict = Depends(AuthUtils.require_role(["ADMIN"]))
+) -> GenerateFixturesResponse:
+    pool = request.app.state.pool
+    
+    async with pool.acquire() as connection:
+        # 1. Verify season exists
+        season = await connection.fetchrow(
+            'SELECT season_id, name FROM "Seasons" WHERE season_id = $1',
+            season_id
+        )
+        
+        if not season:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Season {season_id} not found"
+            )
+        
+        # 2. Get all teams in the season
+        team_rows = await connection.fetch(
+            """
+            SELECT team_id 
+            FROM "SeasonTeams" 
+            WHERE season_id = $1
+            ORDER BY team_id
+            """,
+            season_id
+        )
+        
+        team_ids = [row['team_id'] for row in team_rows]
+        
+        if len(team_ids) < 2:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Need at least 2 teams to generate fixtures. Found {len(team_ids)} teams."
+            )
+        
+        # 3. Generate round-robin pairings
+        matches = generate_round_robin(team_ids, double=payload.double_round_robin)
+        
+        if not matches:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No matches generated. Check team configuration."
+            )
+        
+        # 4. Parse start date
+        try:
+            start_date = datetime.datetime.strptime(payload.start_date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid start_date format. Use YYYY-MM-DD."
+            )
+        
+        # 5. Assign match dates
+        scheduled_matches = assign_match_dates(
+            matches,
+            start_date,
+            matches_per_week_per_team=payload.matches_per_week_per_team,
+            weeks_between_matches=payload.weeks_between_matches,
+            allowed_weekdays=payload.allowed_weekdays
+        )
+        
+        # 6. Insert all matches in a transaction
+        async with connection.transaction():
+            # Check if fixtures already exist for this season
+            existing_count = await connection.fetchval(
+                'SELECT COUNT(*) FROM "Matches" WHERE season_id = $1',
+                season_id
+            )
+            
+            if existing_count > 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Fixtures already exist for season {season_id}. Delete existing fixtures first."
+                )
+            
+            # Insert all matches
+            for match in scheduled_matches:
+                # Convert date to datetime for the TIMESTAMP column
+                match_datetime = datetime.datetime.combine(match['match_date'], datetime.time(19, 0))  # Default 7:00 PM
+                
+                await connection.execute(
+                    """
+                    INSERT INTO "Matches" 
+                    (season_id, home_team_id, away_team_id, match_datetime, status)
+                    VALUES ($1, $2, $3, $4, $5::game_states)
+                    """,
+                    season_id,
+                    match['team_a_id'],
+                    match['team_b_id'],
+                    match_datetime,
+                    match['status']
+                )
+        
+        # 7. Calculate summary
+        dates = [m['match_date'] for m in scheduled_matches]
+        first_match = min(dates).isoformat()
+        last_match = max(dates).isoformat()
+        
+        return GenerateFixturesResponse(
+            matches_created=len(scheduled_matches),
+            start_date=first_match,
+            end_date=last_match,
+            season_id=season_id,
+            message=f"Successfully generated {len(scheduled_matches)} fixtures for {season['name']}"
+        )
