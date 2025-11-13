@@ -31,19 +31,28 @@ class StandingsTable extends StatelessWidget {
             ),
           ),
           const SizedBox(height: Spacing.lg),
-          // Table Header
-          _buildTableHeader(),
-          const SizedBox(height: Spacing.sm),
-          // Table Rows
-          ...standings.asMap().entries.map((entry) {
-            final index = entry.key;
-            final standing = entry.value;
-            return _StandingRow(
-              position: index + 1,
-              standing: standing,
-              team: teams[standing.teamId],
-            );
-          }),
+          // Horizontal scroll for narrow screens
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Table Header
+                _buildTableHeader(),
+                const SizedBox(height: Spacing.sm),
+                // Table Rows
+                ...standings.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final standing = entry.value;
+                  return _StandingRow(
+                    position: index + 1,
+                    standing: standing,
+                    team: teams[standing.teamId],
+                  );
+                }),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -52,8 +61,8 @@ class StandingsTable extends StatelessWidget {
   Widget _buildTableHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.sm,
-        vertical: Spacing.sm,
+        horizontal: Spacing.md,
+        vertical: Spacing.md,
       ),
       decoration: BoxDecoration(
         color: CupertinoColors.activeBlue.withValues(alpha: 0.15),
@@ -62,7 +71,7 @@ class StandingsTable extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: 30,
+            width: 36,
             child: AppText(
               '#',
               style: AppTypography.subhead.copyWith(
@@ -71,9 +80,9 @@ class StandingsTable extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ),
-          const SizedBox(width: Spacing.sm),
-          Expanded(
-            flex: 3,
+          const SizedBox(width: Spacing.md),
+          SizedBox(
+            width: 140,
             child: AppText(
               'Team',
               style: AppTypography.subhead.copyWith(
@@ -95,11 +104,12 @@ class StandingsTable extends StatelessWidget {
 
   Widget _buildHeaderCell(String label) {
     return SizedBox(
-      width: 35,
+      width: 42,
       child: AppText(
         label,
-        style: AppTypography.caption.copyWith(
+        style: AppTypography.subhead.copyWith(
           fontWeight: FontWeight.bold,
+          fontSize: 14,
         ),
         textAlign: TextAlign.center,
       ),
@@ -145,7 +155,7 @@ class _StandingRow extends StatelessWidget {
       child: Row(
       children: [
         SizedBox(
-        width: 30,
+        width: 36,
         child: AppText(
           '$position',
           textAlign: TextAlign.center,
@@ -161,9 +171,9 @@ class _StandingRow extends StatelessWidget {
           ),
         ),
         ),
-        const SizedBox(width: Spacing.sm),
-        Expanded(
-        flex: 3,
+        const SizedBox(width: Spacing.md),
+        SizedBox(
+        width: 140,
         child: AppText(
           team?.name ?? 'Unknown Team',
           style: AppTypography.body.copyWith(
@@ -196,10 +206,11 @@ class _StandingRow extends StatelessWidget {
 
   Widget _buildDataCell(String text, {Color? color, bool bold = false}) {
     return SizedBox(
-      width: 35,
+      width: 42,
       child: AppText(
         text,
-        style: AppTypography.footnote.copyWith(
+        style: AppTypography.subhead.copyWith(
+          fontSize: 14,
           color: color,
           fontWeight: bold ? FontWeight.bold : FontWeight.normal,
         ),
