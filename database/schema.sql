@@ -1,5 +1,6 @@
 -- Drop tables in reverse order of dependency.
 DROP TABLE IF EXISTS "Payments" CASCADE;
+DROP TABLE IF EXISTS "ArchivedStandings" CASCADE;
 DROP TABLE IF EXISTS "LeagueStandings" CASCADE;
 DROP TABLE IF EXISTS "Substitutions" CASCADE;
 DROP TABLE IF EXISTS "Timeouts" CASCADE;
@@ -170,6 +171,27 @@ CREATE TABLE "LeagueStandings" (
   FOREIGN KEY (season_id) REFERENCES "Seasons"(season_id) ON DELETE CASCADE,
   FOREIGN KEY (team_id) REFERENCES "Teams"(team_id) ON DELETE CASCADE,
   UNIQUE (season_id, team_id)
+);
+
+-- Archived standings for historical season data (SC2.2 requirement)
+CREATE TABLE "ArchivedStandings" (
+  archive_id SERIAL PRIMARY KEY,
+  season_id INT NOT NULL,
+  team_id INT NOT NULL,
+  matches_played INT NOT NULL,
+  wins INT NOT NULL,
+  losses INT NOT NULL,
+  sets_won INT NOT NULL,
+  sets_lost INT NOT NULL,
+  set_diff INT NOT NULL, -- Calculated: sets_won - sets_lost
+  points_won INT NOT NULL,
+  points_lost INT NOT NULL,
+  point_diff INT NOT NULL, -- Calculated: points_won - points_lost
+  league_points INT NOT NULL,
+  final_position INT, -- Final ranking position when archived
+  archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (season_id) REFERENCES "Seasons"(season_id) ON DELETE CASCADE,
+  FOREIGN KEY (team_id) REFERENCES "Teams"(team_id) ON DELETE CASCADE
 );
 
 -- Table for the desirable "Payments" feature
