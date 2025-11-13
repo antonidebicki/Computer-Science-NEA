@@ -20,7 +20,7 @@ if env_path.exists():
                 key, value = line.split('=', 1)
                 os.environ[key] = value
 
-from api.authentication.auth import AuthUtils
+from api.auth import AuthUtils
 
 
 def _pg_dsn() -> dict:

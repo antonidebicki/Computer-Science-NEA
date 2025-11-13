@@ -19,7 +19,7 @@ if env_path.exists():
                 os.environ[key] = value
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from api.authentication.auth import AuthUtils
+from api.auth import AuthUtils
 
 API_BASE_URL = "http://localhost:8000"
 

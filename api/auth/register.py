@@ -1,5 +1,5 @@
-from api.authentication.auth import AuthUtils
-from api.core.models import UserCreate, UserOut, RegisterRequest
+from api.auth import AuthUtils
+from api.models import UserCreate, UserOut, RegisterRequest
 from api.routes.users import create_user
 from fastapi import APIRouter, Request, status
 

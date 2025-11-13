@@ -1,9 +1,9 @@
 from typing import List
 import datetime
 from fastapi import APIRouter, HTTPException, Request, status, Depends
-from api.core.models import SeasonOut, SeasonCreate, GenerateFixturesRequest, GenerateFixturesResponse
-from api.authentication.auth import AuthUtils
-from api.core.fixture_generator import generate_round_robin, assign_match_dates
+from api.models import SeasonOut, SeasonCreate, GenerateFixturesRequest, GenerateFixturesResponse
+from api.auth import AuthUtils
+from api.services.fixture_generator import generate_round_robin, assign_match_dates
 
 router = APIRouter()
 

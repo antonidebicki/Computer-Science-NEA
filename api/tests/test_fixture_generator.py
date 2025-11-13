@@ -14,7 +14,7 @@ from typing import List, Dict, Optional
 # Import our fixture generator functions
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from core.fixture_generator import generate_round_robin, assign_match_dates
+from services.fixture_generator import generate_round_robin, assign_match_dates
 
 
 async def get_database_connection():

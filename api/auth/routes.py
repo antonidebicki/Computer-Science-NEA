@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, status
-from api.authentication.auth import AuthUtils
-from api.core.models import RefreshRequest, LoginResponse, UserInfo
+from api.auth import AuthUtils
+from api.models import RefreshRequest, LoginResponse, UserInfo
 import asyncpg
 
 router = APIRouter()

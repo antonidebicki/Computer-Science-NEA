@@ -1,7 +1,7 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, Request, status, Depends
-from api.core.models import LeagueOut, LeagueCreate
-from api.authentication.auth import AuthUtils
+from api.models import LeagueOut, LeagueCreate
+from api.auth import AuthUtils
 
 router = APIRouter()
 

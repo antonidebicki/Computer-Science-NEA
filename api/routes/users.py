@@ -2,8 +2,8 @@ from typing import List
 import asyncpg
 from asyncpg import UniqueViolationError
 from fastapi import APIRouter, HTTPException, Request, status, Depends
-from api.core.models import UserCreate, UserOut
-from api.authentication.auth import AuthUtils
+from api.models import UserCreate, UserOut
+from api.auth import AuthUtils
 
 router = APIRouter()
 
