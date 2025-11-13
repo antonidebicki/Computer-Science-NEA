@@ -112,28 +112,31 @@ class LeaguePreview extends StatelessWidget {
 class _PreviewHeaderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 26,
-          child: AppText(
-            '#',
-            style: AppTypography.caption.copyWith(fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.sm),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 30,
+            child: AppText(
+              '#',
+              style: AppTypography.caption.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
           ),
-        ),
-        const SizedBox(width: Spacing.sm),
-        Expanded(
-          child: AppText(
-            'Team',
-            style: AppTypography.caption.copyWith(fontWeight: FontWeight.bold),
+          const SizedBox(width: Spacing.sm),
+          Expanded(
+            child: AppText(
+              'Team',
+              style: AppTypography.caption.copyWith(fontWeight: FontWeight.bold),
+            ),
           ),
-        ),
-        const _HeaderCell('MP'),
-        const _HeaderCell('W'),
-        const _HeaderCell('L'),
-        const _HeaderCell('Pts'),
-      ],
+          const _HeaderCell('MP'),
+          const _HeaderCell('W'),
+          const _HeaderCell('L'),
+          const _HeaderCell('Pts'),
+        ],
+      ),
     );
   }
 }
