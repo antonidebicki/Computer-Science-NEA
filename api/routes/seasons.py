@@ -131,7 +131,7 @@ async def generate_fixtures(
             allowed_weekdays=payload.allowed_weekdays
         )
         
-        # 6. Insert all matches in a transaction
+        # 6. Insert all matches in transaction
         async with connection.transaction():
             # Check if fixtures already exist for this season
             existing_count = await connection.fetchval(

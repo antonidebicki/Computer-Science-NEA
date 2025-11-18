@@ -31,44 +31,51 @@ class StandingsTable extends StatelessWidget {
             ),
           ),
           const SizedBox(height: Spacing.lg),
-          // Use LayoutBuilder to get available width
+          // Split table: fixed left (name/position) + scrollable right (stats)
           LayoutBuilder(
             builder: (context, constraints) {
-              // Minimum width needed for table (adjust this value as needed)
-              const minTableWidth = 500.0;
-              final needsScroll = constraints.maxWidth < minTableWidth;
-              final tableWidth = needsScroll ? minTableWidth : constraints.maxWidth;
-
-              final tableContent = Column(
+              return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Table Header
-                  _buildTableHeader(tableWidth),
-                  const SizedBox(height: Spacing.sm),
-                  // Table Rows
-                  ...standings.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final standing = entry.value;
-                    return _StandingRow(
-                      position: index + 1,
-                      standing: standing,
-                      team: teams[standing.teamId],
-                      availableWidth: tableWidth,
-                    );
-                  }),
+                  // Fixed left section: Position & Team Name
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildFixedHeader(),
+                      const SizedBox(height: Spacing.sm),
+                      ...standings.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final standing = entry.value;
+                        return _buildFixedRow(
+                          position: index + 1,
+                          team: teams[standing.teamId],
+                        );
+                      }),
+                    ],
+                  ),
+                  // Scrollable right section: All stats
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildScrollableHeader(),
+                          const SizedBox(height: Spacing.sm),
+                          ...standings.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final standing = entry.value;
+                            return _buildScrollableRow(
+                              position: index + 1,
+                              standing: standing,
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               );
-
-              // Wrap in horizontal scroll if needed
-              return needsScroll
-                  ? SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SizedBox(
-                        width: tableWidth,
-                        child: tableContent,
-                      ),
-                    )
-                  : tableContent;
             },
           ),
         ],
@@ -76,24 +83,24 @@ class StandingsTable extends StatelessWidget {
     );
   }
 
-  Widget _buildTableHeader(double availableWidth) {
-    // Calculate responsive column widths
-    final statColumnWidth = _calculateStatColumnWidth(availableWidth);
-    final positionWidth = _calculatePositionWidth(availableWidth);
-
+  // Fixed left section header (Position & Team)
+  Widget _buildFixedHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.md,
-        vertical: Spacing.md,
+      height: 48, // Fixed height for alignment
+      padding: const EdgeInsets.only(
+        left: Spacing.md,
+        right: Spacing.xs,
       ),
       decoration: BoxDecoration(
         color: CupertinoColors.activeBlue.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(Radii.md),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(Radii.md),
+        ),
       ),
       child: Row(
         children: [
           SizedBox(
-            width: positionWidth,
+            width: 36,
             child: Text(
               '#',
               style: AppTypography.subhead.copyWith(
@@ -105,7 +112,8 @@ class StandingsTable extends StatelessWidget {
             ),
           ),
           const SizedBox(width: Spacing.md),
-          Expanded(
+          SizedBox(
+            width: 140,
             child: Text(
               'Team',
               style: AppTypography.subhead.copyWith(
@@ -115,6 +123,29 @@ class StandingsTable extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // Scrollable right section header (Stats)
+  Widget _buildScrollableHeader() {
+    const statColumnWidth = 50.0;
+    
+    return Container(
+      height: 48, // Fixed height for alignment
+      padding: const EdgeInsets.only(
+        left: Spacing.xs,
+        right: Spacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: CupertinoColors.activeBlue.withValues(alpha: 0.15),
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(Radii.md),
+        ),
+      ),
+      child: Row(
+        children: [
           _buildHeaderCell('P', statColumnWidth),
           _buildHeaderCell('W', statColumnWidth),
           _buildHeaderCell('L', statColumnWidth),
@@ -143,52 +174,22 @@ class StandingsTable extends StatelessWidget {
     );
   }
 
-  // Calculate responsive column widths based on available space
-  double _calculatePositionWidth(double availableWidth) {
-    return availableWidth < 400 ? 30 : 36;
-  }
-
-  double _calculateStatColumnWidth(double availableWidth) {
-    if (availableWidth < 400) {
-      return 32;
-    } else if (availableWidth < 600) {
-      return 38;
-    } else {
-      return 42;
-    }
-  }
-}
-
-/// Individual row in the standings table
-class _StandingRow extends StatelessWidget {
-  final int position;
-  final LeagueStanding standing;
-  final Team? team;
-  final double availableWidth;
-
-  const _StandingRow({
-    required this.position,
-    required this.standing,
-    required this.team,
-    required this.availableWidth,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  // Fixed left section row (Position & Team)
+  Widget _buildFixedRow({
+    required int position,
+    required Team? team,
+  }) {
     final isTopThree = position <= 3;
     final isFirst = position == 1;
     final isSecond = position == 2;
     final isThird = position == 3;
 
-    // Calculate responsive widths to match header
-    final statColumnWidth = _calculateStatColumnWidth(availableWidth);
-    final positionWidth = _calculatePositionWidth(availableWidth);
-
     return Container(
+      height: 40, // Fixed height for alignment
       margin: const EdgeInsets.only(bottom: Spacing.xs),
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.sm,
-        vertical: Spacing.sm,
+      padding: const EdgeInsets.only(
+        left: Spacing.sm,
+        right: Spacing.sm,
       ),
       decoration: BoxDecoration(
         color: isFirst
@@ -196,14 +197,16 @@ class _StandingRow extends StatelessWidget {
             : isSecond
               ? const Color(0xFF525252).withAlpha(30)
               : isThird
-                ? const Color(0xFFCD7F32).withAlpha(30)  
+                ? const Color(0xFFCD7F32).withAlpha(30)
                 : null,
-        borderRadius: BorderRadius.circular(Radii.sm),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(Radii.sm),
+        ),
       ),
       child: Row(
         children: [
           SizedBox(
-            width: positionWidth,
+            width: 36,
             child: Text(
               '$position',
               textAlign: TextAlign.center,
@@ -222,7 +225,8 @@ class _StandingRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: Spacing.md),
-          Expanded(
+          SizedBox(
+            width: 140,
             child: Text(
               team?.name ?? 'Unknown Team',
               style: AppTypography.body.copyWith(
@@ -232,6 +236,43 @@ class _StandingRow extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // Scrollable right section row (Stats)
+  Widget _buildScrollableRow({
+    required int position,
+    required LeagueStanding standing,
+  }) {
+    final isFirst = position == 1;
+    final isSecond = position == 2;
+    final isThird = position == 3;
+
+    const statColumnWidth = 50.0;
+
+    return Container(
+      height: 40, // Fixed height for alignment
+      margin: const EdgeInsets.only(bottom: Spacing.xs),
+      padding: const EdgeInsets.only(
+        left: 0,
+        right: Spacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: isFirst
+            ? const Color(0xFFD4AF37).withAlpha(30)
+            : isSecond
+              ? const Color(0xFF525252).withAlpha(30)
+              : isThird
+                ? const Color(0xFFCD7F32).withAlpha(30)
+                : null,
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(Radii.sm),
+        ),
+      ),
+      child: Row(
+        children: [
           _buildDataCell('${standing.matchesPlayed}', statColumnWidth),
           _buildDataCell('${standing.wins}', statColumnWidth),
           _buildDataCell('${standing.losses}', statColumnWidth),
@@ -273,19 +314,5 @@ class _StandingRow extends StatelessWidget {
       ),
     );
   }
-
-  // Calculate responsive column widths to match header
-  double _calculatePositionWidth(double availableWidth) {
-    return availableWidth < 400 ? 30 : 36;
-  }
-
-  double _calculateStatColumnWidth(double availableWidth) {
-    if (availableWidth < 400) {
-      return 32;
-    } else if (availableWidth < 600) {
-      return 38;
-    } else {
-      return 42;
-    }
-  }
 }
+

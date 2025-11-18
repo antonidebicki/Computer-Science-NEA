@@ -1,6 +1,7 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, Request, status, Depends
-from api.models import LeagueOut, LeagueCreate, SeasonOut, SeasonCreate
+from asyncpg.exceptions import UniqueViolationError
+from api.models import LeagueOut, LeagueCreate, SeasonOut, SeasonCreate, LeagueTeamOut
 from api.auth import AuthUtils
 
 router = APIRouter()
@@ -125,3 +126,150 @@ async def create_league_season(request: Request, league_id: int, payload: Season
                 detail="Failed to create season.",
             ) from exc
     return SeasonOut(**row)
+
+
+@router.get("/seasons/{season_id}/teams", response_model=List[LeagueTeamOut])
+async def list_season_teams(
+    request: Request,
+    season_id: int,
+    user: dict = Depends(AuthUtils.get_current_user)
+) -> List[LeagueTeamOut]:
+    """Get all teams in a specific season"""
+    pool = request.app.state.pool
+    async with pool.acquire() as connection:
+        # Verify season exists
+        season = await connection.fetchrow(
+            'SELECT season_id FROM "Seasons" WHERE season_id = $1',
+            season_id
+        )
+        if not season:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Season not found"
+            )
+        
+        # Get all teams in this season
+        rows = await connection.fetch(
+            """
+            SELECT st.season_id, st.team_id, t.name as team_name, st.join_date
+            FROM "SeasonTeams" st
+            JOIN "Teams" t ON st.team_id = t.team_id
+            WHERE st.season_id = $1
+            ORDER BY st.join_date;
+            """,
+            season_id,
+        )
+    return [LeagueTeamOut(**row) for row in rows]
+
+
+@router.post("/seasons/{season_id}/teams/{team_id}", response_model=LeagueTeamOut, status_code=status.HTTP_201_CREATED)
+async def add_team_to_season(
+    request: Request,
+    season_id: int,
+    team_id: int,
+    user: dict = Depends(AuthUtils.require_role(["ADMIN"]))
+) -> LeagueTeamOut:
+    """Add a team to a season. Only admins can do this."""
+    pool = request.app.state.pool
+    
+    async with pool.acquire() as connection:
+        # Verify season exists and is not archived
+        season = await connection.fetchrow(
+            'SELECT season_id, is_archived FROM "Seasons" WHERE season_id = $1',
+            season_id
+        )
+        if not season:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Season not found"
+            )
+        
+        if season['is_archived']:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot add teams to an archived season"
+            )
+        
+        # Verify team exists
+        team = await connection.fetchrow(
+            'SELECT team_id, name FROM "Teams" WHERE team_id = $1',
+            team_id
+        )
+        if not team:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Team not found"
+            )
+        
+        try:
+            async with connection.transaction():
+                # Add team to season
+                row = await connection.fetchrow(
+                    """
+                    INSERT INTO "SeasonTeams" (season_id, team_id, join_date)
+                    VALUES ($1, $2, CURRENT_DATE)
+                    RETURNING season_id, team_id, join_date;
+                    """,
+                    season_id,
+                    team_id,
+                )
+                
+                # Combine with team name
+                result = dict(row)
+                result['team_name'] = team['name']
+                
+                return LeagueTeamOut(**result)
+            
+        except UniqueViolationError:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Team is already in this season"
+            )
+
+
+@router.delete("/seasons/{season_id}/teams/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_team_from_season(
+    request: Request,
+    season_id: int,
+    team_id: int,
+    user: dict = Depends(AuthUtils.require_role(["ADMIN"]))
+):
+    """Remove a team from a season. Only admins can do this."""
+    pool = request.app.state.pool
+    
+    async with pool.acquire() as connection:
+        # Verify season exists and is not archived
+        season = await connection.fetchrow(
+            'SELECT season_id, is_archived FROM "Seasons" WHERE season_id = $1',
+            season_id
+        )
+        if not season:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Season not found"
+            )
+        
+        if season['is_archived']:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot remove teams from an archived season"
+            )
+        
+        # Check if team is in season
+        season_team = await connection.fetchrow(
+            'SELECT season_id, team_id FROM "SeasonTeams" WHERE season_id = $1 AND team_id = $2',
+            season_id,
+            team_id,
+        )
+        if not season_team:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Team is not in this season"
+            )
+        
+        # Remove team from season
+        await connection.execute(
+            'DELETE FROM "SeasonTeams" WHERE season_id = $1 AND team_id = $2',
+            season_id,
+            team_id,
+        )

@@ -87,6 +87,25 @@ class TeamCreate(BaseModel):
   logo_url: Optional[Annotated[str, constr(strip_whitespace=True, min_length=1)]] = None
 
 
+class TeamMemberOut(BaseModel):
+  team_id: int
+  user_id: int
+  role_in_team: str
+  player_number: Optional[int]
+  is_captain: bool
+  is_libero: bool
+  username: str
+  email: EmailStr
+  full_name: Optional[str]
+  user_role: str
+
+
+class TeamJoinRequest(BaseModel):
+  player_number: Optional[int] = None
+  is_captain: bool = False
+  is_libero: bool = False
+
+
 class LeagueOut(BaseModel):
     league_id: int
     name: str
@@ -101,6 +120,13 @@ class LeagueCreate(BaseModel):
     admin_user_id: int
     description: Optional[Annotated[str, constr(strip_whitespace=True, min_length=1)]] = None
     rules: Optional[Annotated[str, constr(strip_whitespace=True, min_length=1)]] = None
+
+
+class LeagueTeamOut(BaseModel):
+    season_id: int
+    team_id: int
+    team_name: str
+    join_date: datetime
 
 
 class SeasonOut(BaseModel):

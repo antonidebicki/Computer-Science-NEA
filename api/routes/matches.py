@@ -47,7 +47,7 @@ async def create_match(request: Request, payload: MatchCreate, user: dict = Depe
             row = await connection.fetchrow(
                 """
                 INSERT INTO "Matches" (season_id, home_team_id, away_team_id, match_datetime, venue, status)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                VALUES ($1, $2, $3, $4, $5, 'SCHEDULED'::game_states)
                 RETURNING match_id, season_id, home_team_id, away_team_id, match_datetime,
                           venue, status, winner_team_id, home_sets_won, away_sets_won;
                 """,
@@ -56,7 +56,6 @@ async def create_match(request: Request, payload: MatchCreate, user: dict = Depe
                 payload.away_team_id,
                 payload.match_datetime,
                 payload.venue,
-                payload.status,
             )
         except Exception as exc:
             raise HTTPException(
