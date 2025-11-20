@@ -1,9 +1,10 @@
-from typing import List
+from typing import List, Optional
 import datetime
-from fastapi import APIRouter, HTTPException, Request, status, Depends
-from api.models import SeasonOut, SeasonCreate, GenerateFixturesRequest, GenerateFixturesResponse
+from fastapi import APIRouter, HTTPException, Request, status, Depends, Query
+from api.models import SeasonOut, SeasonCreate, GenerateFixturesRequest, GenerateFixturesResponse, StandingOut, RecalculateStandingsResponse
 from api.auth import AuthUtils
 from api.services.fixture_generator import generate_round_robin, assign_match_dates
+from api.services.standings_engine import recalculate_season_standings, initialise_season_standings
 
 router = APIRouter()
 
@@ -73,7 +74,6 @@ async def generate_fixtures(
     pool = request.app.state.pool
     
     async with pool.acquire() as connection:
-        # 1. Verify season exists
         season = await connection.fetchrow(
             'SELECT season_id, name FROM "Seasons" WHERE season_id = $1',
             season_id
@@ -85,7 +85,6 @@ async def generate_fixtures(
                 detail=f"Season {season_id} not found"
             )
         
-        # 2. Get all teams in the season
         team_rows = await connection.fetch(
             """
             SELECT team_id 
@@ -104,7 +103,6 @@ async def generate_fixtures(
                 detail=f"Need at least 2 teams to generate fixtures. Found {len(team_ids)} teams."
             )
         
-        # 3. Generate round-robin pairings
         matches = generate_round_robin(team_ids, double=payload.double_round_robin)
         
         if not matches:
@@ -113,7 +111,6 @@ async def generate_fixtures(
                 detail="No matches generated. Check team configuration."
             )
         
-        # 4. Parse start date
         try:
             start_date = datetime.datetime.strptime(payload.start_date, "%Y-%m-%d").date()
         except ValueError:
@@ -122,7 +119,6 @@ async def generate_fixtures(
                 detail="Invalid start_date format. Use YYYY-MM-DD."
             )
         
-        # 5. Assign match dates
         scheduled_matches = assign_match_dates(
             matches,
             start_date,
@@ -131,9 +127,8 @@ async def generate_fixtures(
             allowed_weekdays=payload.allowed_weekdays
         )
         
-        # 6. Insert all matches in transaction
         async with connection.transaction():
-            # Check if fixtures already exist for this season
+            # Prevent duplicate fixture generation for the same season
             existing_count = await connection.fetchval(
                 'SELECT COUNT(*) FROM "Matches" WHERE season_id = $1',
                 season_id
@@ -145,9 +140,8 @@ async def generate_fixtures(
                     detail=f"Fixtures already exist for season {season_id}. Delete existing fixtures first."
                 )
             
-            # Insert all matches
             for match in scheduled_matches:
-                # Convert date to datetime for the TIMESTAMP column
+                # Database expects TIMESTAMP but we have date - default to 7:00 PM
                 match_datetime = datetime.datetime.combine(match['match_date'], datetime.time(19, 0))  # Default 7:00 PM
                 
                 await connection.execute(
@@ -163,7 +157,6 @@ async def generate_fixtures(
                     match['status']
                 )
         
-        # 7. Calculate summary
         dates = [m['match_date'] for m in scheduled_matches]
         first_match = min(dates).isoformat()
         last_match = max(dates).isoformat()
@@ -182,7 +175,6 @@ async def reset_season(request: Request, season_id: int, user: dict = Depends(Au
     """Archive current standings and reset season for a fresh start"""
     pool = request.app.state.pool
     async with pool.acquire() as connection:
-        # Verify season exists
         season = await connection.fetchrow(
             'SELECT season_id, name FROM "Seasons" WHERE season_id = $1',
             season_id
@@ -191,7 +183,7 @@ async def reset_season(request: Request, season_id: int, user: dict = Depends(Au
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
         
         async with connection.transaction():
-            # Get current standings with calculated fields and ranking
+            # Calculate differentials and position in SQL to ensure consistency with archived data
             standings = await connection.fetch(
                 """
                 SELECT 
@@ -224,7 +216,6 @@ async def reset_season(request: Request, season_id: int, user: dict = Depends(Au
                     detail="No standings to archive. Season may already be empty."
                 )
             
-            # Archive standings with all calculated fields
             archived_count = 0
             for record in standings:
                 await connection.execute(
@@ -251,13 +242,11 @@ async def reset_season(request: Request, season_id: int, user: dict = Depends(Au
                 )
                 archived_count += 1
             
-            # Clear current standings
             await connection.execute(
                 'DELETE FROM "LeagueStandings" WHERE season_id = $1',
                 season_id
             )
             
-            # Mark season as archived
             await connection.execute(
                 'UPDATE "Seasons" SET is_archived = TRUE WHERE season_id = $1',
                 season_id
@@ -269,3 +258,156 @@ async def reset_season(request: Request, season_id: int, user: dict = Depends(Au
         "teams_archived": archived_count,
         "archived_at": datetime.datetime.now().isoformat()
     }
+
+
+@router.get("/seasons/{season_id}/standings", response_model=List[StandingOut])
+async def get_season_standings(
+    request: Request,
+    season_id: int,
+    archived: bool = Query(False, description="Return archived standings instead of current"),
+    user: dict = Depends(AuthUtils.get_current_user)
+) -> List[StandingOut]:
+    """Get league standings for a season. Set archived=true to get historical data."""
+    pool = request.app.state.pool
+    
+    async with pool.acquire() as connection:
+        season = await connection.fetchrow(
+            'SELECT season_id, name FROM "Seasons" WHERE season_id = $1',
+            season_id
+        )
+        if not season:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Season not found"
+            )
+        
+        if archived:
+            rows = await connection.fetch(
+                """
+                SELECT 
+                    NULL as standing_id,
+                    a.season_id,
+                    a.team_id,
+                    t.name as team_name,
+                    a.matches_played,
+                    a.wins,
+                    a.losses,
+                    a.sets_won,
+                    a.sets_lost,
+                    a.set_diff,
+                    a.points_won,
+                    a.points_lost,
+                    a.point_diff,
+                    a.league_points,
+                    a.final_position as position
+                FROM "ArchivedStandings" a
+                JOIN "Teams" t ON a.team_id = t.team_id
+                WHERE a.season_id = $1
+                ORDER BY a.final_position ASC;
+                """,
+                season_id
+            )
+        else:
+            # Calculate position dynamically since current standings can change
+            rows = await connection.fetch(
+                """
+                SELECT 
+                    ls.standing_id,
+                    ls.season_id,
+                    ls.team_id,
+                    t.name as team_name,
+                    ls.matches_played,
+                    ls.wins,
+                    ls.losses,
+                    ls.sets_won,
+                    ls.sets_lost,
+                    (ls.sets_won - ls.sets_lost) as set_diff,
+                    ls.points_won,
+                    ls.points_lost,
+                    (ls.points_won - ls.points_lost) as point_diff,
+                    ls.league_points,
+                    ROW_NUMBER() OVER (
+                        ORDER BY ls.league_points DESC,
+                        (ls.sets_won - ls.sets_lost) DESC,
+                        (ls.points_won - ls.points_lost) DESC
+                    ) as position
+                FROM "LeagueStandings" ls
+                JOIN "Teams" t ON ls.team_id = t.team_id
+                WHERE ls.season_id = $1
+                ORDER BY position ASC;
+                """,
+                season_id
+            )
+        
+        return [StandingOut(**row) for row in rows]
+
+
+@router.post("/seasons/{season_id}/recalculate-standings", response_model=RecalculateStandingsResponse)
+async def recalculate_standings(
+    request: Request,
+    season_id: int,
+    user: dict = Depends(AuthUtils.require_role(["ADMIN"]))
+) -> RecalculateStandingsResponse:
+    """Recalculate standings for a season from scratch based on all finished matches"""
+    pool = request.app.state.pool
+    
+    async with pool.acquire() as connection:
+        season = await connection.fetchrow(
+            'SELECT season_id, name FROM "Seasons" WHERE season_id = $1',
+            season_id
+        )
+        if not season:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Season not found"
+            )
+        
+        async with connection.transaction():
+            try:
+                result = await recalculate_season_standings(connection, season_id)
+                
+                return RecalculateStandingsResponse(
+                    season_id=season_id,
+                    matches_processed=result['matches_processed'],
+                    message=f"Standings recalculated for {season['name']}. Processed {result['matches_processed']} matches."
+                )
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to recalculate standings: {str(e)}"
+                )
+
+
+@router.post("/seasons/{season_id}/initialize-standings")
+async def initialize_standings(
+    request: Request,
+    season_id: int,
+    user: dict = Depends(AuthUtils.require_role(["ADMIN"]))
+) -> dict:
+    """Initialize empty standings entries for all teams in a season"""
+    pool = request.app.state.pool
+    
+    async with pool.acquire() as connection:
+        season = await connection.fetchrow(
+            'SELECT season_id, name FROM "Seasons" WHERE season_id = $1',
+            season_id
+        )
+        if not season:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Season not found"
+            )
+        
+        try:
+            rows_inserted = await initialise_season_standings(connection, season_id)
+            
+            return {
+                "season_id": season_id,
+                "teams_initialized": rows_inserted,
+                "message": f"Initialized standings for {rows_inserted} teams in {season['name']}"
+            }
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to initialize standings: {str(e)}"
+            )

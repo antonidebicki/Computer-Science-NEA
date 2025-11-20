@@ -181,3 +181,59 @@ class GenerateFixturesResponse(BaseModel):
     season_id: int
     message: str
     status: str = "SCHEDULED"
+
+
+class StandingOut(BaseModel):
+    standing_id: Optional[int] = None
+    season_id: int
+    team_id: int
+    team_name: str
+    matches_played: int
+    wins: int
+    losses: int
+    sets_won: int
+    sets_lost: int
+    set_diff: int
+    points_won: int
+    points_lost: int
+    point_diff: int
+    league_points: int
+    position: Optional[int] = None
+
+
+class ProcessMatchRequest(BaseModel):
+    match_id: int
+
+
+class ProcessMatchResponse(BaseModel):
+    match_id: int
+    season_id: int
+    home_team_id: int
+    away_team_id: int
+    winner_team_id: int
+    status: str
+    message: str
+
+
+class RecalculateStandingsResponse(BaseModel):
+    season_id: int
+    matches_processed: int
+    message: str
+
+
+class TeamStandingUpdate(BaseModel):
+    wins: int
+    sets: int
+    points: int
+    league_points: int
+
+
+class MatchProcessingResult(BaseModel):
+    match_id: int
+    season_id: int
+    home_team_id: int
+    away_team_id: int
+    winner_team_id: int
+    home_updates: TeamStandingUpdate
+    away_updates: TeamStandingUpdate
+

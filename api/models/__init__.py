@@ -19,6 +19,12 @@ from .schemas import (
     MatchCreate,
     GenerateFixturesRequest,
     GenerateFixturesResponse,
+    StandingOut,
+    ProcessMatchRequest,
+    ProcessMatchResponse,
+    RecalculateStandingsResponse,
+    TeamStandingUpdate,
+    MatchProcessingResult,
 )
 
 __all__ = [
@@ -42,4 +48,10 @@ __all__ = [
     "MatchCreate",
     "GenerateFixturesRequest",
     "GenerateFixturesResponse",
+    "StandingOut",
+    "ProcessMatchRequest",
+    "ProcessMatchResponse",
+    "RecalculateStandingsResponse",
+    "TeamStandingUpdate",
+    "MatchProcessingResult",
 ]
