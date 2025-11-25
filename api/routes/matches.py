@@ -1,6 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Request, status, Depends
-from api.models import MatchOut, MatchCreate, ProcessMatchRequest, ProcessMatchResponse
+from api.models import MatchOut, MatchCreate, MatchUpdate, SetCreate, SetOut, ProcessMatchRequest, ProcessMatchResponse
 from api.auth import AuthUtils
 from api.services.standings_engine import process_match_result
 
@@ -80,6 +80,118 @@ async def create_match(request: Request, payload: MatchCreate, user: dict = Depe
                 detail="Failed to create match.",
             ) from exc
     return MatchOut(**row)
+
+
+@router.put("/matches/{match_id}", response_model=MatchOut)
+async def update_match(
+    request: Request,
+    match_id: int,
+    payload: MatchUpdate,
+    user: dict = Depends(AuthUtils.require_role(["ADMIN", "REFEREE"]))
+) -> MatchOut:
+    """Update match details (status, winner, scores)"""
+    pool = request.app.state.pool
+    async with pool.acquire() as connection:
+        # Build dynamic update query based on provided fields
+        updates = []
+        params = []
+        param_count = 1
+        
+        if payload.status is not None:
+            updates.append(f"status = ${param_count}::game_states")
+            params.append(payload.status)
+            param_count += 1
+        
+        if payload.winner_team_id is not None:
+            updates.append(f"winner_team_id = ${param_count}")
+            params.append(payload.winner_team_id)
+            param_count += 1
+        
+        if payload.home_sets_won is not None:
+            updates.append(f"home_sets_won = ${param_count}")
+            params.append(payload.home_sets_won)
+            param_count += 1
+        
+        if payload.away_sets_won is not None:
+            updates.append(f"away_sets_won = ${param_count}")
+            params.append(payload.away_sets_won)
+            param_count += 1
+        
+        if not updates:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No fields to update"
+            )
+        
+        params.append(match_id)
+        query = f"""
+            UPDATE "Matches"
+            SET {', '.join(updates)}
+            WHERE match_id = ${param_count}
+            RETURNING match_id, season_id, home_team_id, away_team_id, match_datetime,
+                      venue, status, winner_team_id, home_sets_won, away_sets_won
+        """
+        
+        row = await connection.fetchrow(query, *params)
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Match not found"
+            )
+        
+        return MatchOut(**row)
+
+
+@router.post("/matches/{match_id}/sets", response_model=SetOut, status_code=status.HTTP_201_CREATED)
+async def create_set(
+    request: Request,
+    match_id: int,
+    payload: SetCreate,
+    user: dict = Depends(AuthUtils.require_role(["ADMIN", "REFEREE"]))
+) -> SetOut:
+    """Create a set record for a match"""
+    pool = request.app.state.pool
+    async with pool.acquire() as connection:
+        try:
+            row = await connection.fetchrow(
+                """
+                INSERT INTO "Sets" (match_id, set_number, home_team_score, away_team_score)
+                VALUES ($1, $2, $3, $4)
+                RETURNING set_id, match_id, set_number, home_team_score, away_team_score
+                """,
+                match_id,
+                payload.set_number,
+                payload.home_team_score,
+                payload.away_team_score
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to create set: {str(exc)}"
+            ) from exc
+        
+        return SetOut(**row)
+
+
+@router.get("/matches/{match_id}/sets", response_model=List[SetOut])
+async def get_match_sets(
+    request: Request,
+    match_id: int,
+    user: dict = Depends(AuthUtils.get_current_user)
+) -> List[SetOut]:
+    """Get all sets for a match"""
+    pool = request.app.state.pool
+    async with pool.acquire() as connection:
+        rows = await connection.fetch(
+            """
+            SELECT set_id, match_id, set_number, home_team_score, away_team_score
+            FROM "Sets"
+            WHERE match_id = $1
+            ORDER BY set_number
+            """,
+            match_id
+        )
+        return [SetOut(**row) for row in rows]
 
 
 @router.post("/matches/process", response_model=ProcessMatchResponse)

@@ -398,15 +398,16 @@ async def initialize_standings(
                 detail="Season not found"
             )
         
-        try:
-            rows_inserted = await initialise_season_standings(connection, season_id)
-            
-            return {
-                "season_id": season_id,
-                "teams_initialized": rows_inserted,
-                "message": f"Initialized standings for {rows_inserted} teams in {season['name']}"
-            }
-        except Exception as e:
+        async with connection.transaction():
+            try:
+                rows_inserted = await initialise_season_standings(connection, season_id)
+                
+                return {
+                    "season_id": season_id,
+                    "teams_initialized": rows_inserted,
+                    "message": f"Initialized standings for {rows_inserted} teams in {season['name']}"
+                }
+            except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to initialize standings: {str(e)}"

@@ -14,6 +14,30 @@
 BEGIN;
 
 -- ============================================================================
+-- CLEANUP: Remove existing seed data to prevent duplicates
+-- ============================================================================
+
+-- Delete in correct order to respect foreign key constraints
+DELETE FROM "Sets" WHERE match_id IN (SELECT match_id FROM "Matches");
+DELETE FROM "Matches";
+DELETE FROM "LeagueStandings";
+DELETE FROM "ArchivedStandings";
+DELETE FROM "SeasonTeams";
+DELETE FROM "TeamMembers";
+DELETE FROM "Seasons";
+DELETE FROM "Teams";
+DELETE FROM "Leagues";
+DELETE FROM "Users" WHERE username IN (
+    'league_admin',
+    'sarah_johnson', 'emma_davies', 'olivia_smith', 'sophie_brown',
+    'mike_thompson', 'james_wilson', 'liam_taylor', 'noah_jones',
+    'lisa_anderson', 'ava_martin', 'mia_white', 'isabella_harris',
+    'david_roberts', 'ethan_clark', 'lucas_lewis', 'mason_walker',
+    'rachel_green', 'charlotte_hall', 'amelia_allen', 'harper_young',
+    'tom_baker', 'william_king', 'benjamin_scott', 'alexander_green'
+);
+
+-- ============================================================================
 -- 1. USERS (Admin, Coaches, Players)
 -- ============================================================================
 
@@ -21,7 +45,7 @@ BEGIN;
 INSERT INTO "Users" (username, hashed_password, email, full_name, role, created_at)
 VALUES (
     'league_admin',
-    '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', -- password: AdminPass123
+    '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', -- password: AdminPass123
     'admin@volleyleague.com',
     'League Administrator',
     'ADMIN',
@@ -36,33 +60,33 @@ VALUES (
 INSERT INTO "Users" (username, hashed_password, email, full_name, role, created_at)
 VALUES 
     -- Coach
-    ('sarah_johnson', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'sarah.j@southbucks.vc', 'Sarah Johnson', 'COACH', NOW()),
+    ('sarah_johnson', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'sarah.j@southbucks.vc', 'Sarah Johnson', 'COACH', NOW()),
     -- Players
-    ('emma_davies', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'emma.d@southbucks.vc', 'Emma Davies', 'PLAYER', NOW()),
-    ('olivia_smith', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'olivia.s@southbucks.vc', 'Olivia Smith', 'PLAYER', NOW()),
-    ('sophie_brown', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'sophie.b@southbucks.vc', 'Sophie Brown', 'PLAYER', NOW())
+    ('emma_davies', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'emma.d@southbucks.vc', 'Emma Davies', 'PLAYER', NOW()),
+    ('olivia_smith', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'olivia.s@southbucks.vc', 'Olivia Smith', 'PLAYER', NOW()),
+    ('sophie_brown', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'sophie.b@southbucks.vc', 'Sophie Brown', 'PLAYER', NOW())
 ON CONFLICT (username) DO NOTHING;
 
 -- Team 2: Wycombe Eagles VC
 INSERT INTO "Users" (username, hashed_password, email, full_name, role, created_at)
 VALUES 
     -- Coach
-    ('mike_thompson', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'mike.t@wycombeagles.vc', 'Mike Thompson', 'COACH', NOW()),
+    ('mike_thompson', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'mike.t@wycombeagles.vc', 'Mike Thompson', 'COACH', NOW()),
     -- Players
-    ('james_wilson', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'james.w@wycombeagles.vc', 'James Wilson', 'PLAYER', NOW()),
-    ('liam_taylor', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'liam.t@wycombeagles.vc', 'Liam Taylor', 'PLAYER', NOW()),
-    ('noah_jones', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'noah.j@wycombeagles.vc', 'Noah Jones', 'PLAYER', NOW())
+    ('james_wilson', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'james.w@wycombeagles.vc', 'James Wilson', 'PLAYER', NOW()),
+    ('liam_taylor', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'liam.t@wycombeagles.vc', 'Liam Taylor', 'PLAYER', NOW()),
+    ('noah_jones', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'noah.j@wycombeagles.vc', 'Noah Jones', 'PLAYER', NOW())
 ON CONFLICT (username) DO NOTHING;
 
 -- Team 3: Thames Titans VC
 INSERT INTO "Users" (username, hashed_password, email, full_name, role, created_at)
 VALUES 
     -- Coach
-    ('lisa_anderson', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'lisa.a@thamestitans.vc', 'Lisa Anderson', 'COACH', NOW()),
+    ('lisa_anderson', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'lisa.a@thamestitans.vc', 'Lisa Anderson', 'COACH', NOW()),
     -- Players
-    ('ava_martin', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'ava.m@thamestitans.vc', 'Ava Martin', 'PLAYER', NOW()),
-    ('mia_white', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'mia.w@thamestitans.vc', 'Mia White', 'PLAYER', NOW()),
-    ('isabella_harris', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'isabella.h@thamestitans.vc', 'Isabella Harris', 'PLAYER', NOW())
+    ('ava_martin', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'ava.m@thamestitans.vc', 'Ava Martin', 'PLAYER', NOW()),
+    ('mia_white', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'mia.w@thamestitans.vc', 'Mia White', 'PLAYER', NOW()),
+    ('isabella_harris', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'isabella.h@thamestitans.vc', 'Isabella Harris', 'PLAYER', NOW())
 ON CONFLICT (username) DO NOTHING;
 
 -- ============================================================================
@@ -73,33 +97,33 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO "Users" (username, hashed_password, email, full_name, role, created_at)
 VALUES 
     -- Coach
-    ('david_roberts', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'david.r@manchestermeteors.vc', 'David Roberts', 'COACH', NOW()),
+    ('david_roberts', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'david.r@manchestermeteors.vc', 'David Roberts', 'COACH', NOW()),
     -- Players
-    ('ethan_clark', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'ethan.c@manchestermeteors.vc', 'Ethan Clark', 'PLAYER', NOW()),
-    ('lucas_lewis', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'lucas.l@manchestermeteors.vc', 'Lucas Lewis', 'PLAYER', NOW()),
-    ('mason_walker', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'mason.w@manchestermeteors.vc', 'Mason Walker', 'PLAYER', NOW())
+    ('ethan_clark', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'ethan.c@manchestermeteors.vc', 'Ethan Clark', 'PLAYER', NOW()),
+    ('lucas_lewis', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'lucas.l@manchestermeteors.vc', 'Lucas Lewis', 'PLAYER', NOW()),
+    ('mason_walker', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'mason.w@manchestermeteors.vc', 'Mason Walker', 'PLAYER', NOW())
 ON CONFLICT (username) DO NOTHING;
 
 -- Team 5: Liverpool Lightning VC
 INSERT INTO "Users" (username, hashed_password, email, full_name, role, created_at)
 VALUES 
     -- Coach
-    ('rachel_green', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'rachel.g@liverpoollightning.vc', 'Rachel Green', 'COACH', NOW()),
+    ('rachel_green', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'rachel.g@liverpoollightning.vc', 'Rachel Green', 'COACH', NOW()),
     -- Players
-    ('charlotte_hall', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'charlotte.h@liverpoollightning.vc', 'Charlotte Hall', 'PLAYER', NOW()),
-    ('amelia_allen', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'amelia.a@liverpoollightning.vc', 'Amelia Allen', 'PLAYER', NOW()),
-    ('harper_young', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'harper.y@liverpoollightning.vc', 'Harper Young', 'PLAYER', NOW())
+    ('charlotte_hall', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'charlotte.h@liverpoollightning.vc', 'Charlotte Hall', 'PLAYER', NOW()),
+    ('amelia_allen', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'amelia.a@liverpoollightning.vc', 'Amelia Allen', 'PLAYER', NOW()),
+    ('harper_young', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'harper.y@liverpoollightning.vc', 'Harper Young', 'PLAYER', NOW())
 ON CONFLICT (username) DO NOTHING;
 
 -- Team 6: Preston Panthers VC
 INSERT INTO "Users" (username, hashed_password, email, full_name, role, created_at)
 VALUES 
     -- Coach
-    ('tom_baker', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'tom.b@prestonpanthers.vc', 'Tom Baker', 'COACH', NOW()),
+    ('tom_baker', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'tom.b@prestonpanthers.vc', 'Tom Baker', 'COACH', NOW()),
     -- Players
-    ('william_king', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'william.k@prestonpanthers.vc', 'William King', 'PLAYER', NOW()),
-    ('benjamin_scott', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'benjamin.s@prestonpanthers.vc', 'Benjamin Scott', 'PLAYER', NOW()),
-    ('alexander_hill', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5oPfKBFvxEOEu', 'alexander.h@prestonpanthers.vc', 'Alexander Hill', 'PLAYER', NOW())
+    ('william_king', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'william.k@prestonpanthers.vc', 'William King', 'PLAYER', NOW()),
+    ('benjamin_scott', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'benjamin.s@prestonpanthers.vc', 'Benjamin Scott', 'PLAYER', NOW()),
+    ('alexander_hill', '$2b$12$bU7lE0y/kMRBQjEOez4LF.q2tKu0QPnjqKKgVf7VzPu1AfILRqNMa', 'alexander.h@prestonpanthers.vc', 'Alexander Hill', 'PLAYER', NOW())
 ON CONFLICT (username) DO NOTHING;
 
 -- ============================================================================
@@ -354,6 +378,102 @@ FROM "Teams" t
 CROSS JOIN "Users" u
 WHERE t.name = 'Preston Panthers VC'
   AND u.username IN ('tom_baker', 'william_king', 'benjamin_scott', 'alexander_hill')
+ON CONFLICT DO NOTHING;
+
+-- ============================================================================
+-- 7. SCHEDULED MATCHES (Sample matches for testing)
+-- ============================================================================
+
+-- South East Division Matches
+INSERT INTO "Matches" (season_id, home_team_id, away_team_id, match_datetime, venue, status)
+SELECT 
+    s.season_id,
+    t1.team_id,
+    t2.team_id,
+    '2025-12-10 19:00:00'::timestamp,
+    'Main Arena',
+    'SCHEDULED'
+FROM "Seasons" s
+CROSS JOIN (SELECT team_id FROM "Teams" WHERE name = 'South Bucks Volleyball Club') t1
+CROSS JOIN (SELECT team_id FROM "Teams" WHERE name = 'Wycombe Eagles VC') t2
+WHERE s.name = '2025/26 Season'
+  AND s.league_id = (SELECT league_id FROM "Leagues" WHERE name = 'South East Division')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "Matches" (season_id, home_team_id, away_team_id, match_datetime, venue, status)
+SELECT 
+    s.season_id,
+    t1.team_id,
+    t2.team_id,
+    '2025-12-11 19:00:00'::timestamp,
+    'Sports Hall',
+    'SCHEDULED'
+FROM "Seasons" s
+CROSS JOIN (SELECT team_id FROM "Teams" WHERE name = 'Wycombe Eagles VC') t1
+CROSS JOIN (SELECT team_id FROM "Teams" WHERE name = 'Thames Titans VC') t2
+WHERE s.name = '2025/26 Season'
+  AND s.league_id = (SELECT league_id FROM "Leagues" WHERE name = 'South East Division')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "Matches" (season_id, home_team_id, away_team_id, match_datetime, venue, status)
+SELECT 
+    s.season_id,
+    t1.team_id,
+    t2.team_id,
+    '2025-12-12 19:00:00'::timestamp,
+    'Community Center',
+    'SCHEDULED'
+FROM "Seasons" s
+CROSS JOIN (SELECT team_id FROM "Teams" WHERE name = 'Thames Titans VC') t1
+CROSS JOIN (SELECT team_id FROM "Teams" WHERE name = 'South Bucks Volleyball Club') t2
+WHERE s.name = '2025/26 Season'
+  AND s.league_id = (SELECT league_id FROM "Leagues" WHERE name = 'South East Division')
+ON CONFLICT DO NOTHING;
+
+-- North West Division Matches
+INSERT INTO "Matches" (season_id, home_team_id, away_team_id, match_datetime, venue, status)
+SELECT 
+    s.season_id,
+    t1.team_id,
+    t2.team_id,
+    '2025-12-10 19:00:00'::timestamp,
+    'Manchester Arena',
+    'SCHEDULED'
+FROM "Seasons" s
+CROSS JOIN (SELECT team_id FROM "Teams" WHERE name = 'Manchester Meteors VC') t1
+CROSS JOIN (SELECT team_id FROM "Teams" WHERE name = 'Liverpool Lightning VC') t2
+WHERE s.name = '2025/26 Season'
+  AND s.league_id = (SELECT league_id FROM "Leagues" WHERE name = 'North West Division')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "Matches" (season_id, home_team_id, away_team_id, match_datetime, venue, status)
+SELECT 
+    s.season_id,
+    t1.team_id,
+    t2.team_id,
+    '2025-12-11 19:00:00'::timestamp,
+    'Liverpool Sports Complex',
+    'SCHEDULED'
+FROM "Seasons" s
+CROSS JOIN (SELECT team_id FROM "Teams" WHERE name = 'Liverpool Lightning VC') t1
+CROSS JOIN (SELECT team_id FROM "Teams" WHERE name = 'Preston Panthers VC') t2
+WHERE s.name = '2025/26 Season'
+  AND s.league_id = (SELECT league_id FROM "Leagues" WHERE name = 'North West Division')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "Matches" (season_id, home_team_id, away_team_id, match_datetime, venue, status)
+SELECT 
+    s.season_id,
+    t1.team_id,
+    t2.team_id,
+    '2025-12-12 19:00:00'::timestamp,
+    'Preston Leisure Center',
+    'SCHEDULED'
+FROM "Seasons" s
+CROSS JOIN (SELECT team_id FROM "Teams" WHERE name = 'Preston Panthers VC') t1
+CROSS JOIN (SELECT team_id FROM "Teams" WHERE name = 'Manchester Meteors VC') t2
+WHERE s.name = '2025/26 Season'
+  AND s.league_id = (SELECT league_id FROM "Leagues" WHERE name = 'North West Division')
 ON CONFLICT DO NOTHING;
 
 COMMIT;

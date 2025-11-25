@@ -166,6 +166,27 @@ class MatchCreate(BaseModel):
     venue: Optional[Annotated[str, constr(strip_whitespace=True, min_length=1)]] = None
 
 
+class MatchUpdate(BaseModel):
+    status: Optional[str] = None
+    winner_team_id: Optional[int] = None
+    home_sets_won: Optional[int] = None
+    away_sets_won: Optional[int] = None
+
+
+class SetCreate(BaseModel):
+    set_number: int
+    home_team_score: int
+    away_team_score: int
+
+
+class SetOut(BaseModel):
+    set_id: int
+    match_id: int
+    set_number: int
+    home_team_score: int
+    away_team_score: int
+
+
 class GenerateFixturesRequest(BaseModel):
     start_date: str  # Format: "YYYY-MM-DD"
     matches_per_week_per_team: int = 1
