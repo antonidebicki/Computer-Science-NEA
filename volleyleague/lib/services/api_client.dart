@@ -70,7 +70,7 @@ class ApiClient {
       if (refreshToken == null) return false;
 
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/refresh'),
+        Uri.parse('$baseUrl/api/refresh'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'refresh_token': refreshToken}),
       );
@@ -146,7 +146,7 @@ class ApiClient {
 
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
     // Skip token check for auth endpoints
-    if (!endpoint.startsWith('/auth/')) {
+    if (!endpoint.startsWith('/api/login') && !endpoint.startsWith('/api/auth/register')) {
       await _ensureValidToken();
     }
 
@@ -158,7 +158,7 @@ class ApiClient {
       );
 
       // If we get a 401 and it's not an auth endpoint, try refreshing
-      if (response.statusCode == 401 && !endpoint.startsWith('/auth/')) {
+      if (response.statusCode == 401 && !endpoint.startsWith('/api/login') && !endpoint.startsWith('/api/auth/register')) {
         final refreshed = await _refreshAccessToken();
         if (refreshed) {
           final retryResponse = await http.post(

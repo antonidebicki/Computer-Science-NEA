@@ -58,13 +58,12 @@ class AuthService {
     return accessToken != null && refreshToken != null;
   }
 
-  /// Returns true if token expires within 5 minutes.
   Future<bool> isAccessTokenExpired() async {
     final token = await getAccessToken();
     if (token == null) return true;
 
     try {
-      // Check if token is expired or expires in less than 5 minutes
+      // Check if token is expired/expires in less than 5 minutes
       final isExpired = JwtDecoder.isExpired(token);
       if (isExpired) return true;
 
@@ -75,7 +74,6 @@ class AuthService {
       
       return difference.inMinutes < 5;
     } catch (e) {
-      // If we can't decode the token, consider it expired
       return true;
     }
   }

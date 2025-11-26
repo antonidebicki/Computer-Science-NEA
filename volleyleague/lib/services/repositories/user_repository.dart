@@ -1,4 +1,5 @@
 import '../../core/models/user.dart';
+import '../../core/models/enums.dart';
 import '../api_client.dart';
 import '../auth_service.dart';
 
@@ -12,7 +13,7 @@ class UserRepository {
 
   /// Automatically stores tokens in secure storage and sets auth token in ApiClient.
   Future<Map<String, dynamic>> login(String username, String password) async {
-    final response = await _apiClient.post('/auth/login', {
+    final response = await _apiClient.post('/api/login', {
       'username': username,
       'password': password,
     });
@@ -45,7 +46,7 @@ class UserRepository {
     required String fullName,
     required String role,
   }) async {
-    await _apiClient.post('/auth/register', {
+    await _apiClient.post('/api/auth/register', {
       'username': username,
       'password': password,
       'email': email,
@@ -54,16 +55,21 @@ class UserRepository {
     });
   }
 
-  Future<User> getUser(int userId) async {
-    final data = await _apiClient.get('/users/$userId');
-    return User.fromJson(data);
-  }
-
   Future<User?> getCurrentUser() async {
     final userId = await _authService.getUserId();
-    if (userId == null) return null;
+    final username = await _authService.getUsername();
+    final role = await _authService.getRole();
+    
+    if (userId == null || username == null || role == null) return null;
 
-    return getUser(userId);
+    return User(
+      userId: userId,
+      username: username,
+      hashedPassword: '',
+      email: '',
+      role: UserRole.fromString(role),
+      createdAt: DateTime.now(),
+    );
   }
 
   /// Clears all stored tokens and removes auth token from ApiClient.

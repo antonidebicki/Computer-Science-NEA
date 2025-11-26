@@ -8,12 +8,12 @@ class LeagueRepository {
   LeagueRepository(this._apiClient);
 
   Future<List<League>> getLeagues() async {
-    final data = await _apiClient.get('/leagues');
+    final data = await _apiClient.get('/api/leagues');
     return (data as List).map((json) => League.fromJson(json)).toList();
   }
 
   Future<League> getLeague(int leagueId) async {
-    final data = await _apiClient.get('/leagues/$leagueId');
+    final data = await _apiClient.get('/api/leagues/$leagueId');
     return League.fromJson(data);
   }
 
@@ -23,7 +23,7 @@ class LeagueRepository {
     String? description,
     String? rules,
   }) async {
-    final data = await _apiClient.post('/leagues', {
+    final data = await _apiClient.post('/api/leagues', {
       'name': name,
       'admin_user_id': adminUserId,
       'description': description,
@@ -33,12 +33,12 @@ class LeagueRepository {
   }
 
   Future<List<Season>> getSeasons(int leagueId) async {
-    final data = await _apiClient.get('/leagues/$leagueId/seasons');
+    final data = await _apiClient.get('/api/leagues/$leagueId/seasons');
     return (data as List).map((json) => Season.fromJson(json)).toList();
   }
 
   Future<Season> getSeason(int seasonId) async {
-    final data = await _apiClient.get('/seasons/$seasonId');
+    final data = await _apiClient.get('/api/seasons/$seasonId');
     return Season.fromJson(data);
   }
 
@@ -48,7 +48,7 @@ class LeagueRepository {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
-    final data = await _apiClient.post('/seasons', {
+    final data = await _apiClient.post('/api/seasons', {
       'league_id': leagueId,
       'name': name,
       'start_date': startDate.toIso8601String().split('T')[0],
@@ -62,13 +62,13 @@ class LeagueRepository {
     int seasonId, {
     bool archived = false,
   }) async {
-    final endpoint = '/seasons/$seasonId/standings?archived=$archived';
+    final endpoint = '/api/seasons/$seasonId/standings?archived=$archived';
     final data = await _apiClient.get(endpoint);
     return (data as List).cast<Map<String, dynamic>>();
   }
 
   Future<List<Map<String, dynamic>>> getSeasonTeams(int seasonId) async {
-    final data = await _apiClient.get('/seasons/$seasonId/teams');
+    final data = await _apiClient.get('/api/seasons/$seasonId/teams');
     return (data as List).cast<Map<String, dynamic>>();
   }
 
@@ -76,7 +76,7 @@ class LeagueRepository {
     required int seasonId,
     required int teamId,
   }) async {
-    await _apiClient.post('/seasons/$seasonId/teams', {
+    await _apiClient.post('/api/seasons/$seasonId/teams/$teamId', {
       'team_id': teamId,
     });
   }
@@ -85,12 +85,12 @@ class LeagueRepository {
     required int seasonId,
     required int teamId,
   }) async {
-    await _apiClient.delete('/seasons/$seasonId/teams/$teamId');
+    await _apiClient.delete('/api/seasons/$seasonId/teams/$teamId');
   }
 
   Future<Map<String, dynamic>> initializeStandings(int seasonId) async {
     final data = await _apiClient.post(
-      '/seasons/$seasonId/initialize-standings',
+      '/api/seasons/$seasonId/initialize-standings',
       {},
     );
     return data;
@@ -98,7 +98,7 @@ class LeagueRepository {
 
   Future<Map<String, dynamic>> recalculateStandings(int seasonId) async {
     final data = await _apiClient.post(
-      '/seasons/$seasonId/recalculate-standings',
+      '/api/seasons/$seasonId/recalculate-standings',
       {},
     );
     return data;

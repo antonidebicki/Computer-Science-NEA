@@ -13,7 +13,7 @@ class MatchRepository {
     int? teamId,
     String? status,
   }) async {
-    var endpoint = '/matches';
+    var endpoint = '/api/matches';
     final queryParams = <String>[];
 
     if (seasonId != null) queryParams.add('season_id=$seasonId');
@@ -29,7 +29,7 @@ class MatchRepository {
   }
 
   Future<Match> getMatch(int matchId) async {
-    final data = await _apiClient.get('/matches/$matchId');
+    final data = await _apiClient.get('/api/matches/$matchId');
     return Match.fromJson(data);
   }
 
@@ -40,7 +40,7 @@ class MatchRepository {
     DateTime? matchDatetime,
     String? venue,
   }) async {
-    final data = await _apiClient.post('/matches', {
+    final data = await _apiClient.post('/api/matches', {
       'season_id': seasonId,
       'home_team_id': homeTeamId,
       'away_team_id': awayTeamId,
@@ -58,7 +58,7 @@ class MatchRepository {
     int? homeSetsWon,
     int? awaySetsWon,
   }) async {
-    final data = await _apiClient.put('/matches/$matchId', {
+    final data = await _apiClient.put('/api/matches/$matchId', {
       if (status != null) 'status': status,
       if (winnerTeamId != null) 'winner_team_id': winnerTeamId,
       if (homeSetsWon != null) 'home_sets_won': homeSetsWon,
@@ -68,11 +68,11 @@ class MatchRepository {
   }
 
   Future<void> deleteMatch(int matchId) async {
-    await _apiClient.delete('/matches/$matchId');
+    await _apiClient.delete('/api/matches/$matchId');
   }
 
   Future<List<VolleyballSet>> getMatchSets(int matchId) async {
-    final data = await _apiClient.get('/matches/$matchId/sets');
+    final data = await _apiClient.get('/api/matches/$matchId/sets');
     return (data as List).map((json) => VolleyballSet.fromJson(json)).toList();
   }
 
@@ -82,7 +82,7 @@ class MatchRepository {
     required int homeTeamScore,
     required int awayTeamScore,
   }) async {
-    final data = await _apiClient.post('/matches/$matchId/sets', {
+    final data = await _apiClient.post('/api/matches/$matchId/sets', {
       'set_number': setNumber,
       'home_team_score': homeTeamScore,
       'away_team_score': awayTeamScore,
@@ -96,7 +96,7 @@ class MatchRepository {
     required int homeTeamScore,
     required int awayTeamScore,
   }) async {
-    final data = await _apiClient.put('/matches/$matchId/sets/$setId', {
+    final data = await _apiClient.put('/api/matches/$matchId/sets/$setId', {
       'home_team_score': homeTeamScore,
       'away_team_score': awayTeamScore,
     });
@@ -111,7 +111,7 @@ class MatchRepository {
     required int homePoints,
     required int awayPoints,
   }) async {
-    await _apiClient.post('/matches/$matchId/submit-score', {
+    await _apiClient.post('/api/matches/$matchId/submit-score', {
       'home_sets_won': homeSetsWon,
       'away_sets_won': awaySetsWon,
       'home_points': homePoints,
@@ -121,7 +121,7 @@ class MatchRepository {
 
   /// Updates standings. Should be called by ADMIN/REFEREE after match is complete.
   Future<Map<String, dynamic>> processMatch(int matchId) async {
-    final data = await _apiClient.post('/matches/process', {
+    final data = await _apiClient.post('/api/matches/process', {
       'match_id': matchId,
     });
     return data;
@@ -135,7 +135,7 @@ class MatchRepository {
     bool doubleRoundRobin = false,
     List<int>? allowedWeekdays,
   }) async {
-    final data = await _apiClient.post('/seasons/$seasonId/generate-fixtures', {
+    final data = await _apiClient.post('/api/seasons/$seasonId/generate-fixtures', {
       'start_date': startDate,
       'matches_per_week_per_team': matchesPerWeekPerTeam,
       'weeks_between_matches': weeksBetweenMatches,

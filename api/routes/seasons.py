@@ -408,7 +408,7 @@ async def initialize_standings(
                     "message": f"Initialized standings for {rows_inserted} teams in {season['name']}"
                 }
             except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to initialize standings: {str(e)}"
-            )
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to initialize standings: {str(e)}"
+                )
