@@ -4,6 +4,7 @@
 /// 1. Start backend: uvicorn api.fastapi_app:app --reload
 /// 2. Ensure database is seeded with test data (admin: league_admin / AdminPass123)
 /// 3. Run: flutter test integration_test/repository_integration_test.dart
+library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
