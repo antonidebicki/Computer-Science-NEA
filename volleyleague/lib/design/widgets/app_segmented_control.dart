@@ -2,21 +2,24 @@ import 'package:flutter/cupertino.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import '../tokens/spacing.dart';
 
-/// Apple-style liquid glass segmented control for role selection
-class AppRoleSelector extends StatelessWidget {
-  final String selectedRole;
-  final ValueChanged<String> onChanged;
-  final List<String> roles;
-  
-  const AppRoleSelector({
+/// Apple-style liquid glass segmented control
+class AppSegmentedControl<T> extends StatelessWidget {
+  final T selectedValue;
+  final ValueChanged<T> onChanged;
+  final Map<T, String> segments;
+
+  const AppSegmentedControl({
     super.key,
-    required this.selectedRole,
+    required this.selectedValue,
     required this.onChanged,
-    this.roles = const ['Player', 'Team', 'League'],
+    required this.segments,
   });
 
   @override
   Widget build(BuildContext context) {
+    final keys = segments.keys.toList();
+    final values = segments.values.toList();
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: FakeGlass(
@@ -35,10 +38,10 @@ class AppRoleSelector extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               const double gap = Spacing.xs;
-              final int n = roles.length;
+              final int n = keys.length;
               final double totalGaps = gap * (n - 1);
               final double segmentWidth = (constraints.maxWidth - totalGaps) / n;
-              final int selectedIndex = roles.indexOf(selectedRole).clamp(0, n - 1);
+              final int selectedIndex = keys.indexOf(selectedValue).clamp(0, n - 1);
 
               return SizedBox(
                 height: 44,
@@ -63,7 +66,12 @@ class AppRoleSelector extends StatelessWidget {
                             ),
                           ),
                           shadows: const [
-                            BoxShadow(color: Color(0x1F000000), blurRadius: 8, spreadRadius: 0, offset: Offset(0, 2)),
+                            BoxShadow(
+                              color: Color(0x1F000000),
+                              blurRadius: 8,
+                              spreadRadius: 0,
+                              offset: Offset(0, 2),
+                            ),
                           ],
                         ),
                       ),
@@ -71,13 +79,13 @@ class AppRoleSelector extends StatelessWidget {
                     // Foreground labels and taps
                     Row(
                       children: [
-                        for (int i = 0; i < roles.length; i++) ...[
+                        for (int i = 0; i < keys.length; i++) ...[
                           if (i > 0) SizedBox(width: gap),
                           SizedBox(
                             width: segmentWidth,
                             child: CupertinoButton(
                               padding: EdgeInsets.zero,
-                              onPressed: () => onChanged(roles[i]),
+                              onPressed: () => onChanged(keys[i]),
                               child: DefaultTextStyle.merge(
                                 style: TextStyle(
                                   color: i == selectedIndex
@@ -86,7 +94,7 @@ class AppRoleSelector extends StatelessWidget {
                                   fontWeight: FontWeight.w600,
                                   fontSize: 15,
                                 ),
-                                child: Text(roles[i]),
+                                child: Text(values[i]),
                               ),
                             ),
                           ),

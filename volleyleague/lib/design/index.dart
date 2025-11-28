@@ -18,6 +18,9 @@ export 'widgets/app_scaffold.dart';
 export 'widgets/app_text_field.dart';
 export 'widgets/app_role_selector.dart';
 export 'widgets/app_glass_container.dart';
+export 'widgets/app_segmented_control.dart';
+
+export 'layouts/auth_screen_layout.dart';
 
 export 'icons/app_icons.dart';
 export 'utils/theme_extensions.dart';

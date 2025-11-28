@@ -1,7 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
-/// Liquid glass container widget for glassmorphism effects using BackdropFilter
+/// Liquid glass container widget for glassmorphism effects using liquid_glass_renderer
 class AppGlassContainer extends StatelessWidget {
   final Widget child;
   final double? width;
@@ -30,20 +30,17 @@ class AppGlassContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+      child: FakeGlass(
+        shape: LiquidRoundedSuperellipse(borderRadius: borderRadius),
+        settings: LiquidGlassSettings(
+          blur: blur,
+          glassColor: color,
+          lightIntensity: 1.5,
+        ),
         child: Container(
           width: width,
           height: height,
           padding: padding,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(
-              color: borderColor,
-              width: borderWidth,
-            ),
-          ),
           child: child,
         ),
       ),

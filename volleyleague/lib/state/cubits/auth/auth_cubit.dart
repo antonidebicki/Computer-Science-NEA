@@ -2,6 +2,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:volleyleague/core/models/user.dart';
 import 'package:volleyleague/services/repositories/user_repository.dart';
 import 'package:volleyleague/services/auth_service.dart';
+import 'package:volleyleague/core/logger.dart';
+import 'package:volleyleague/core/exceptions.dart';
 import 'auth_state.dart';
 
 /// cubits are chosen over blocs due to 50 hour time constraint in my alevel NEA project
@@ -15,15 +17,25 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> login(String username, String password) async {
     emit(AuthLoading());
     try {
+      Log.d('[AuthCubit] Attempting login for username: $username');
       final response = await _userRepository.login(username, password);
+      Log.d('[AuthCubit] Login API response received');
       
       final userJson = response['user'] as Map<String, dynamic>;
+      Log.d('[AuthCubit] User JSON: $userJson');
+      
       final user = User.fromJson(userJson);
+      Log.d('[AuthCubit] User parsed: $user');
+      
       final token = response['access_token'] as String;
+      Log.d('[AuthCubit] Token received (length: ${token.length})');
 
       emit(AuthAuthenticated(user: user, token: token));
-    } catch (e) {
-      emit(AuthError(e.toString()));
+      Log.d('[AuthCubit] Emitted AuthAuthenticated state');
+    } catch (e, stackTrace) {
+      Log.e('[AuthCubit] Login error', e, stackTrace);
+      final errorMessage = e is ApiException ? e.message : e.toString();
+      emit(AuthError(errorMessage));
     }
   }
 
@@ -46,12 +58,13 @@ class AuthCubit extends Cubit<AuthState> {
       
       emit(AuthUnauthenticated());
     } catch (e) {
-      emit(AuthError(e.toString()));
+      final errorMessage = e is ApiException ? e.message : e.toString();
+      emit(AuthError(errorMessage));
     }
   }
 
   Future<void> checkAuthStatus() async {
-    emit(AuthLoading());
+    // Don't emit loading on startup - check silently
     try {
       final isLoggedIn = await _userRepository.isLoggedIn();
       
@@ -82,18 +95,21 @@ class AuthCubit extends Cubit<AuthState> {
         emit(AuthUnauthenticated());
       }
     } catch (e) {
+      // On any error during startup check, just show login screen
       await _authService.clearTokens();
       emit(AuthUnauthenticated());
     }
   }
 
   Future<void> logout() async {
-    emit(AuthLoading());
+    // Don't emit loading during logout - just clear and navigate
     try {
       await _userRepository.logout();
       emit(AuthUnauthenticated());
     } catch (e) {
-      emit(AuthError(e.toString()));
+      // Even on error, clear tokens and show login screen
+      await _authService.clearTokens();
+      emit(AuthUnauthenticated());
     }
   }
 

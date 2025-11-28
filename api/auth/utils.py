@@ -39,7 +39,11 @@ class AuthUtils:
         else:
             expire = datetime.datetime.now(datetime.timezone.utc) + timedelta(hours=24)
         to_encode.update({"exp": expire})
-        secret_key = os.environ.get("SECRET_KEY", "your-default-secret-key")
+        
+        # Enforce environment variables - no defaults for security
+        secret_key = os.environ.get("SECRET_KEY")
+        if not secret_key:
+            raise ValueError("SECRET_KEY environment variable must be set")
         algorithm = os.environ.get("ALGORITHM", "HS256")
         encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=algorithm)
         return encoded_jwt
@@ -55,7 +59,9 @@ class AuthUtils:
             return {"error": "Authorization header missing"}
         try:
             token = authorization.split(" ")[1]
-            secret_key = os.environ.get("SECRET_KEY", "your-default-secret-key")
+            secret_key = os.environ.get("SECRET_KEY")
+            if not secret_key:
+                raise ValueError("SECRET_KEY environment variable must be set")
             algorithm = os.environ.get("ALGORITHM", "HS256")
             payload = jwt.decode(token, secret_key, algorithms=[algorithm])
             # ensure this is an access token
@@ -81,7 +87,10 @@ class AuthUtils:
             # default 30 days
             expire = datetime.datetime.now(datetime.timezone.utc) + timedelta(days=30)
         to_encode.update({"exp": expire})
-        secret_key = os.environ.get("REFRESH_SECRET_KEY", os.environ.get("SECRET_KEY", "your-default-secret-key"))
+        # Use separate refresh secret or fall back to main secret (but no default)
+        secret_key = os.environ.get("REFRESH_SECRET_KEY") or os.environ.get("SECRET_KEY")
+        if not secret_key:
+            raise ValueError("SECRET_KEY environment variable must be set")
         algorithm = os.environ.get("ALGORITHM", "HS256")
         return jwt.encode(to_encode, secret_key, algorithm=algorithm)
 
@@ -92,7 +101,9 @@ class AuthUtils:
         Ensures the token 'type' is 'refresh'.
         """
         try:
-            secret_key = os.environ.get("REFRESH_SECRET_KEY", os.environ.get("SECRET_KEY", "your-default-secret-key"))
+            secret_key = os.environ.get("REFRESH_SECRET_KEY") or os.environ.get("SECRET_KEY")
+            if not secret_key:
+                raise ValueError("SECRET_KEY environment variable must be set")
             algorithm = os.environ.get("ALGORITHM", "HS256")
             payload = jwt.decode(token, secret_key, algorithms=[algorithm])
             if payload.get("type") != "refresh":
@@ -127,7 +138,9 @@ class AuthUtils:
                 )
             
             # Decode and verify token
-            secret_key = os.environ.get("SECRET_KEY", "your-default-secret-key")
+            secret_key = os.environ.get("SECRET_KEY")
+            if not secret_key:
+                raise ValueError("SECRET_KEY environment variable must be set")
             algorithm = os.environ.get("ALGORITHM", "HS256")
             payload = jwt.decode(token, secret_key, algorithms=[algorithm])
             

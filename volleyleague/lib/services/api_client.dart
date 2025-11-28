@@ -1,15 +1,18 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'auth_service.dart';
+import '../core/exceptions.dart';
+import '../core/constants.dart';
 
 /// HTTP client for all backend API calls with authentication support.
 /// 
 /// Automatically handles token refresh when access token is expired.
 class ApiClient {
   ApiClient({
-    this.baseUrl = 'http://localhost:8000',
+    String? baseUrl,
     AuthService? authService,
-  }) : _authService = authService ?? AuthService();
+  }) : baseUrl = baseUrl ?? AppConstants.apiBaseUrl,
+       _authService = authService ?? AuthService();
 
   final String baseUrl;
   final AuthService _authService;
@@ -45,19 +48,35 @@ class ApiClient {
       case 204:
         return null;
       case 400:
-        throw ApiException('Bad request: ${response.body}');
+        final errorData = _parseErrorMessage(response.body);
+        throw ApiException(errorData);
       case 401:
-        throw ApiException('Unauthorized - please login');
+        final errorData = _parseErrorMessage(response.body);
+        throw ApiException(errorData);
       case 403:
-        throw ApiException('Forbidden - insufficient permissions');
+        final errorData = _parseErrorMessage(response.body);
+        throw ApiException(errorData);
       case 404:
         throw ApiException('Not found');
       case 422:
-        throw ApiException('Validation error: ${response.body}');
+        final errorData = _parseErrorMessage(response.body);
+        throw ApiException(errorData);
       case 500:
-        throw ApiException('Server error');
+        throw ApiException('Server error - please try again later');
       default:
         throw ApiException('Error: ${response.statusCode}');
+    }
+  }
+
+  String _parseErrorMessage(String responseBody) {
+    try {
+      final data = json.decode(responseBody);
+      if (data is Map && data.containsKey('detail')) {
+        return data['detail'] as String;
+      }
+      return responseBody;
+    } catch (e) {
+      return responseBody;
     }
   }
 
@@ -115,58 +134,29 @@ class ApiClient {
     }
   }
 
-  Future<dynamic> get(String endpoint) async {
-    await _ensureValidToken();
-
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl$endpoint'),
-        headers: _getHeaders(),
-      );
-      
-      // If we get a 401, try refreshing once
-      if (response.statusCode == 401) {
-        final refreshed = await _refreshAccessToken();
-        if (refreshed) {
-          // Retry the request with new token
-          final retryResponse = await http.get(
-            Uri.parse('$baseUrl$endpoint'),
-            headers: _getHeaders(),
-          );
-          return _handleResponse(retryResponse);
-        }
-      }
-      
-      return _handleResponse(response);
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException('Network error: $e');
-    }
-  }
-
-  Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
-    // Skip token check for auth endpoints
-    if (!endpoint.startsWith('/api/login') && !endpoint.startsWith('/api/auth/register')) {
+  /// Core method that handles all HTTP requests with automatic retry on 401.
+  /// Eliminates code duplication across GET, POST, PUT, DELETE methods.
+  Future<dynamic> _makeRequest(
+    String method,
+    String endpoint, {
+    Map<String, dynamic>? body,
+    bool skipTokenCheck = false,
+  }) async {
+    // Skip token validation for auth endpoints
+    if (!skipTokenCheck) {
       await _ensureValidToken();
     }
 
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl$endpoint'),
-        headers: _getHeaders(),
-        body: json.encode(body),
-      );
+      // Make initial request
+      http.Response response = await _executeRequest(method, endpoint, body);
 
-      // If we get a 401 and it's not an auth endpoint, try refreshing
-      if (response.statusCode == 401 && !endpoint.startsWith('/api/login') && !endpoint.startsWith('/api/auth/register')) {
+      // Handle 401 by refreshing token and retrying (but not for auth endpoints)
+      if (response.statusCode == 401 && !skipTokenCheck) {
         final refreshed = await _refreshAccessToken();
         if (refreshed) {
-          final retryResponse = await http.post(
-            Uri.parse('$baseUrl$endpoint'),
-            headers: _getHeaders(),
-            body: json.encode(body),
-          );
-          return _handleResponse(retryResponse);
+          // Retry the request with new token
+          response = await _executeRequest(method, endpoint, body);
         }
       }
 
@@ -175,71 +165,47 @@ class ApiClient {
       if (e is ApiException) rethrow;
       throw ApiException('Network error: $e');
     }
+  }
+
+  /// Executes the actual HTTP request based on method type.
+  Future<http.Response> _executeRequest(
+    String method,
+    String endpoint,
+    Map<String, dynamic>? body,
+  ) async {
+    final uri = Uri.parse('$baseUrl$endpoint');
+    final headers = _getHeaders();
+
+    switch (method.toUpperCase()) {
+      case 'GET':
+        return await http.get(uri, headers: headers);
+      case 'POST':
+        return await http.post(uri, headers: headers, body: json.encode(body));
+      case 'PUT':
+        return await http.put(uri, headers: headers, body: json.encode(body));
+      case 'DELETE':
+        return await http.delete(uri, headers: headers);
+      default:
+        throw ApiException('Unsupported HTTP method: $method');
+    }
+  }
+
+  Future<dynamic> get(String endpoint) async {
+    return _makeRequest('GET', endpoint);
+  }
+
+  Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
+    // Skip token check for auth endpoints
+    final skipToken = endpoint.startsWith('/api/login') || 
+                      endpoint.startsWith('/api/auth/register');
+    return _makeRequest('POST', endpoint, body: body, skipTokenCheck: skipToken);
   }
 
   Future<dynamic> put(String endpoint, Map<String, dynamic> body) async {
-    await _ensureValidToken();
-
-    try {
-      final response = await http.put(
-        Uri.parse('$baseUrl$endpoint'),
-        headers: _getHeaders(),
-        body: json.encode(body),
-      );
-
-      if (response.statusCode == 401) {
-        final refreshed = await _refreshAccessToken();
-        if (refreshed) {
-          final retryResponse = await http.put(
-            Uri.parse('$baseUrl$endpoint'),
-            headers: _getHeaders(),
-            body: json.encode(body),
-          );
-          return _handleResponse(retryResponse);
-        }
-      }
-
-      return _handleResponse(response);
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException('Network error: $e');
-    }
+    return _makeRequest('PUT', endpoint, body: body);
   }
 
   Future<dynamic> delete(String endpoint) async {
-    await _ensureValidToken();
-
-    try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl$endpoint'),
-        headers: _getHeaders(),
-      );
-
-      if (response.statusCode == 401) {
-        final refreshed = await _refreshAccessToken();
-        if (refreshed) {
-          final retryResponse = await http.delete(
-            Uri.parse('$baseUrl$endpoint'),
-            headers: _getHeaders(),
-          );
-          return _handleResponse(retryResponse);
-        }
-      }
-
-      return _handleResponse(response);
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException('Network error: $e');
-    }
+    return _makeRequest('DELETE', endpoint);
   }
-}
-
-/// Custom exception for API errors.
-class ApiException implements Exception {
-  final String message;
-
-  ApiException(this.message);
-
-  @override
-  String toString() => message;
 }

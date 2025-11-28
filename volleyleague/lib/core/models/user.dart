@@ -26,11 +26,13 @@ class User {
     return User(
       userId: json['user_id'] as int,
       username: json['username'] as String,
-      hashedPassword: json['hashed_password'] as String,
+      hashedPassword: json['hashed_password'] as String? ?? '', // Optional for login responses
       email: json['email'] as String,
       fullName: json['full_name'] as String?,
       role: UserRole.fromString(json['role'] as String),
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(), // Default to now if not provided (login response)
     );
   }
 

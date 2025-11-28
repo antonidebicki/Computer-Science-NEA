@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../design/index.dart';
-import '../../../state/providers/theme_provider.dart';
+import '../../../state/cubits/auth/auth_cubit.dart';
+import '../../../state/cubits/auth/auth_state.dart';
+import '../../../core/routing/app_router.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -26,6 +28,61 @@ class _RegisterScreenState extends State<RegisterScreen> {
     dobController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  void _handleRegister() {
+    final firstName = firstNameController.text.trim();
+    final lastName = lastNameController.text.trim();
+    final email = emailController.text.trim();
+    final dob = dobController.text.trim();
+    final password = passwordController.text.trim();
+
+    // Validation
+    if (firstName.isEmpty || lastName.isEmpty || email.isEmpty || dob.isEmpty || password.isEmpty) {
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Missing Information'),
+          content: const Text('Please fill in all fields'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    if (password.length < 6) {
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Invalid Password'),
+          content: const Text('Password must be at least 6 characters'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Use email as username for now
+    final username = email.split('@')[0];
+    final fullName = '$firstName $lastName';
+
+    context.read<AuthCubit>().register(
+      username: username,
+      password: password,
+      email: email,
+      fullName: fullName,
+      role: selectedRole.toUpperCase(),
+    );
   }
 
   void _pickDate() async {
@@ -90,109 +147,167 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.watch<ThemeProvider>().isDark;
-    
-    return CupertinoPageScaffold(
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: AppGradients.backgroundGradient(context, isDark: isDark),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              child: AppGlassContainer(
-                width: 370,
-                padding: const EdgeInsets.symmetric(vertical: Spacing.xxl, horizontal: Spacing.xl),
-                borderRadius: Spacing.xl,
-                blur: Spacing.xl,
-                color: CupertinoColors.white.withValues(alpha: 0.25),
-                borderColor: CupertinoColors.white.withValues(alpha: 0.3),
-                child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: Spacing.sm),
-                  Row(
-                    children: [
-                      CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () => Navigator.of(context).maybePop(), minimumSize: Size(0, 0),
-                        child: const Icon(CupertinoIcons.back, size: 28),
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is AuthUnauthenticated) {
+          // Registration successful, show success and navigate to login
+          showCupertinoDialog(
+            context: context,
+            builder: (context) => CupertinoAlertDialog(
+              title: const Text('Success'),
+              content: const Text('Account created successfully! Please log in.'),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK'),
+                  onPressed: () {
+                    Navigator.pop(context); // Close dialog
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      AppRouter.login,
+                      (route) => false,
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        } else if (state is AuthError) {
+          // Show error dialog
+          showCupertinoDialog(
+            context: context,
+            builder: (context) => CupertinoAlertDialog(
+              title: const Text('Registration Failed'),
+              content: Text(state.message),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          );
+        }
+      },
+      child: BlocBuilder<AuthCubit, AuthState>(
+        builder: (context, state) {
+          final isLoading = state is AuthLoading;
+
+          return AuthScreenLayout(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: Spacing.sm),
+                Row(
+                  children: [
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: isLoading ? null : () => Navigator.of(context).maybePop(),
+                      minSize: 0,
+                      child: Icon(
+                        CupertinoIcons.back,
+                        size: 28,
+                        color: isLoading ? CupertinoColors.systemGrey : null,
                       ),
-                      const Spacer(),
-                    ],
+                    ),
+                    const Spacer(),
+                  ],
+                ),
+                const SizedBox(height: Spacing.sm),
+                Text(
+                  'Register',
+                  style: CupertinoTheme.of(context).textTheme.navLargeTitleTextStyle.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: Spacing.xs),
+                Text(
+                  'Create an account to continue!',
+                  style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(color: CupertinoColors.systemGrey),
+                ),
+                const SizedBox(height: Spacing.xl),
+                IgnorePointer(
+                  ignoring: isLoading,
+                  child: Opacity(
+                    opacity: isLoading ? 0.5 : 1.0,
+                    child: Column(
+                      children: [
+                        AppTextField(
+                          controller: firstNameController,
+                          placeholder: 'First Name',
+                        ),
+                        const SizedBox(height: Spacing.md),
+                        AppTextField(
+                          controller: lastNameController,
+                          placeholder: 'Last Name',
+                        ),
+                        const SizedBox(height: Spacing.md),
+                        AppTextField(
+                          controller: emailController,
+                          placeholder: 'Email',
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: Spacing.md),
+                        GestureDetector(
+                          onTap: _pickDate,
+                          child: AbsorbPointer(
+                            child: AppTextField(
+                              controller: dobController,
+                              placeholder: 'DD/MM/YYYY',
+                              suffix: const Padding(
+                                padding: EdgeInsets.only(right: Spacing.sm),
+                                child: Icon(
+                                  CupertinoIcons.calendar,
+                                  color: CupertinoColors.systemGrey,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: Spacing.md),
+                        AppPasswordField(
+                          controller: passwordController,
+                        ),
+                        const SizedBox(height: Spacing.lg),
+                        AppRoleSelector(
+                          selectedRole: selectedRole,
+                          onChanged: (role) => setState(() => selectedRole = role),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: Spacing.sm),
-                  Text(
-                    'Register',
-                    style: CupertinoTheme.of(context).textTheme.navLargeTitleTextStyle.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: Spacing.xs),
-                  Text(
-                    'Create an account to continue!',
-                    style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(color: CupertinoColors.systemGrey),
-                  ),
-                  const SizedBox(height: Spacing.xl),
-                  AppTextField(
-                    controller: firstNameController,
-                    placeholder: 'First Name',
-                  ),
-                  const SizedBox(height: Spacing.md),
-                  AppTextField(
-                    controller: lastNameController,
-                    placeholder: 'Last Name',
-                  ),
-                  const SizedBox(height: Spacing.md),
-                  AppTextField(
-                    controller: emailController,
-                    placeholder: 'Email',
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: Spacing.md),
-                  GestureDetector(
-                    onTap: _pickDate,
-                    child: AbsorbPointer(
-                      child: AppTextField(
-                        controller: dobController,
-                        placeholder: 'DD/MM/YYYY',
-                        suffix: const Padding(
-                          padding: EdgeInsets.only(right: Spacing.sm),
-                          child: Icon(CupertinoIcons.calendar, color: CupertinoColors.systemGrey),
+                ),
+                const SizedBox(height: Spacing.xl),
+                AppPrimaryButton(
+                  onPressed: isLoading ? null : _handleRegister,
+                  child: isLoading
+                      ? const CupertinoActivityIndicator(color: CupertinoColors.white)
+                      : const Text('Register'),
+                ),
+                const SizedBox(height: Spacing.xl),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Already have an account? ",
+                      style: AppTextStyles.greyRegular,
+                    ),
+                    AppTextButtonX(
+                      onPressed: isLoading
+                          ? null
+                          : () => Navigator.of(context).pushNamedAndRemoveUntil(
+                                AppRouter.login,
+                                (route) => false,
+                              ),
+                      child: Text(
+                        'Log in',
+                        style: AppTextStyles.activeBlueSemibold.copyWith(
+                          color: isLoading ? CupertinoColors.systemGrey : null,
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: Spacing.md),
-                  AppPasswordField(controller: passwordController),
-                  const SizedBox(height: Spacing.lg),
-                  AppRoleSelector(
-                    selectedRole: selectedRole,
-                    onChanged: (role) => setState(() => selectedRole = role),
-                  ),
-                  const SizedBox(height: Spacing.xl),
-                  AppPrimaryButton(onPressed: () {}, child: const Text('Register')),
-                  const SizedBox(height: Spacing.xl),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Already have an account? ",
-                        style: AppTextStyles.greyRegular,
-                      ),
-                      AppTextButtonX(
-                        onPressed: () {},
-                        child: const Text(
-                          'Log in',
-                          style: AppTextStyles.activeBlueSemibold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
-            ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

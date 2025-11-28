@@ -1,5 +1,5 @@
-import 'dart:ui';
 import 'package:flutter/cupertino.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import '../tokens/spacing.dart';
 
 /// Primary filled button with liquid glass effect (Cupertino style)
@@ -15,8 +15,13 @@ class AppPrimaryButton extends StatelessWidget {
       width: double.infinity,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: FakeGlass(
+          shape: LiquidRoundedSuperellipse(borderRadius: 30),
+          settings: const LiquidGlassSettings(
+            blur: 10,
+            glassColor: Color(0x80007AFF),
+            lightIntensity: 1.5,
+          ),
           child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -26,10 +31,6 @@ class AppPrimaryButton extends StatelessWidget {
                 ],
               ),
               borderRadius: BorderRadius.circular(30),
-              border: Border.all(
-                color: CupertinoColors.white.withValues(alpha: 0.3),
-                width: 1.5,
-              ),
             ),
             child: CupertinoButton(
               padding: const EdgeInsets.symmetric(vertical: Spacing.lg),
@@ -63,16 +64,17 @@ class AppTonalButton extends StatelessWidget {
       width: double.infinity,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: FakeGlass(
+          shape: LiquidRoundedSuperellipse(borderRadius: 30),
+          settings: const LiquidGlassSettings(
+            blur: 10,
+            glassColor: Color(0x99F2F2F7),
+            lightIntensity: 1.2,
+          ),
           child: Container(
             decoration: BoxDecoration(
               color: CupertinoColors.systemGrey6.withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(30),
-              border: Border.all(
-                color: CupertinoColors.white.withValues(alpha: 0.3),
-                width: 1.5,
-              ),
             ),
             child: CupertinoButton(
               padding: const EdgeInsets.symmetric(vertical: Spacing.lg),
