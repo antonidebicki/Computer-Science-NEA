@@ -6,10 +6,8 @@ import 'package:volleyleague/features/auth/screens/register_screen.dart';
 import 'package:volleyleague/features/player/screens/player_home_screen.dart';
 import 'package:volleyleague/state/cubits/auth/auth_cubit.dart';
 
-/// Central router for the application
-/// Manages all navigation routes and role-based home screen selection
+/// routes for the app
 class AppRouter {
-  // Route names
   static const String login = '/login';
   static const String register = '/register';
   static const String playerHome = '/player-home';
@@ -17,7 +15,6 @@ class AppRouter {
   static const String adminHome = '/admin-home';
   static const String refereeHome = '/referee-home';
 
-  /// Generate routes based on route settings
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case login:
@@ -56,7 +53,6 @@ class AppRouter {
     }
   }
 
-  /// Get the appropriate home route based on user role
   static String getHomeRouteForRole(UserRole role) {
     switch (role) {
       case UserRole.player:
@@ -70,8 +66,8 @@ class AppRouter {
     }
   }
 
-  /// Get a widget for the home screen based on user role
-  /// Used for direct navigation without named routes
+  /// for now creates placeholders 
+  /// will be changed when the home screens are implemented - probably in like a week or smth
   static Widget getHomeScreenForRole(UserRole role) {
     switch (role) {
       case UserRole.player:
@@ -85,7 +81,6 @@ class AppRouter {
     }
   }
 
-  /// Create a simple placeholder screen for roles
   /// TODO: Replace with actual home screens
   static Widget _createPlaceholderScreen(String title) {
     return Builder(

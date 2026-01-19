@@ -1,5 +1,4 @@
-import 'dart:io';
-import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:provider/provider.dart';
@@ -61,6 +60,17 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Provider.of<ThemeProvider>(context).isDark;
+    // Colors for light/dark mode
+    final navBarGlassColor = isDark
+        ? const Color(0xCC23242B) // dark glass, alpha 0xCC
+        : const Color(0x4DFFFFFF); // light glass, alpha 0x4D
+    final selectorGlassColor = isDark
+        ? const Color(0xB31A1A1A) // darker selector, alpha 0xB3
+        : const Color(0x268E8E93); // light selector, alpha 0x26
+    final navBarShadowDark = const Color(0xFF000000).withAlpha((255 * 0.25).toInt());
+    final navBarShadowLight = const Color(0xFFFFFFFF).withAlpha((255 * 0.10).toInt());
+
     return Padding(
       padding: const EdgeInsets.only(
         left: Spacing.xl,
@@ -72,12 +82,12 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
           borderRadius: BorderRadius.circular(100),
           boxShadow: [
             BoxShadow(
-              color: CupertinoColors.black.withOpacity(0.15),
+              color: navBarShadowDark,
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
             BoxShadow(
-              color: CupertinoColors.white.withOpacity(0.1),
+              color: navBarShadowLight,
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
@@ -87,65 +97,66 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
           borderRadius: BorderRadius.circular(100),
           child: FakeGlass(
             shape: LiquidRoundedSuperellipse(borderRadius: 100),
-            settings: const LiquidGlassSettings(
+            settings: LiquidGlassSettings(
               blur: 50,
-              glassColor: Color(0x4DFFFFFF),
-              lightIntensity: 2.0,
+              glassColor: navBarGlassColor,
+              lightIntensity: isDark ? 1.0 : 2.0,
             ),
             child: SizedBox(
               height: 70,
               child: Stack(
                 children: [
-              // Animated liquid glass selector
-              AnimatedBuilder(
-                animation: _animation,
-                builder: (context, child) {
-                  final screenWidth = MediaQuery.of(context).size.width;
-                  final navBarWidth = screenWidth - (Spacing.xl * 2);
-                  final itemWidth = navBarWidth / widget.items.length;
-                  
-                  final double fromPosition = _previousIndex * itemWidth;
-                  final double toPosition = widget.currentIndex * itemWidth;
-                  final double currentPosition = 
-                      fromPosition + (toPosition - fromPosition) * _animation.value;
-                  
-                  const inset = Spacing.xs;
-                  return Positioned(
-                    left: currentPosition + inset,
-                    top: inset,
-                    bottom: inset,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(100),
-                      child: FakeGlass(
-                        shape: LiquidRoundedSuperellipse(borderRadius: 100),
-                        settings: const LiquidGlassSettings(
-                          blur: 5,
-                          glassColor: Color(0x268E8E93),
-                          lightIntensity: 0.8,
+                  // Animated liquid glass selector
+                  AnimatedBuilder(
+                    animation: _animation,
+                    builder: (context, child) {
+                      final screenWidth = MediaQuery.of(context).size.width;
+                      final navBarWidth = screenWidth - (Spacing.xl * 2);
+                      final itemWidth = navBarWidth / widget.items.length;
+
+                      final double fromPosition = _previousIndex * itemWidth;
+                      final double toPosition = widget.currentIndex * itemWidth;
+                      final double currentPosition =
+                          fromPosition + (toPosition - fromPosition) * _animation.value;
+
+                      const inset = Spacing.xs;
+                      return Positioned(
+                        left: currentPosition + inset,
+                        top: inset,
+                        bottom: inset,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(100),
+                          child: FakeGlass(
+                            shape: LiquidRoundedSuperellipse(borderRadius: 100),
+                            settings: LiquidGlassSettings(
+                              blur: 5,
+                              glassColor: selectorGlassColor,
+                              lightIntensity: isDark ? 0.5 : 0.8,
+                            ),
+                            child: SizedBox(
+                              width: itemWidth - inset * 2,
+                              height: double.infinity,
+                            ),
+                          ),
                         ),
-                        child: SizedBox(
-                          width: itemWidth - inset * 2,
-                          height: double.infinity,
-                        ),
+                      );
+                    },
+                  ),
+
+                  // Navigation items
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(
+                      widget.items.length,
+                      (index) => _buildNavItem(
+                        context,
+                        widget.items[index],
+                        index,
+                        widget.currentIndex == index,
+                        isDark: isDark,
                       ),
                     ),
-                  );
-                },
-              ),
-              
-              // Navigation items
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(
-                  widget.items.length,
-                  (index) => _buildNavItem(
-                    context,
-                    widget.items[index],
-                    index,
-                    widget.currentIndex == index,
                   ),
-                ),
-              ),
                 ],
               ),
             ),
@@ -159,17 +170,19 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
     BuildContext context,
     NavBarItem item,
     int index,
-    bool isSelected,
-  ) {
-    final isDark = context.watch<ThemeProvider>().isDark;
-    final isIPhone = Platform.isIOS;
+    bool isSelected, {
+    required bool isDark,
+  }) {
+    final isIPhone = defaultTargetPlatform == TargetPlatform.iOS;
     final iconSize = isIPhone ? 22.0 : 24.0;
-    
-    // Lighter grey for dark mode, regular grey for light mode
-    final unselectedColor = isDark 
-        ? CupertinoColors.systemGrey2 
-        : CupertinoColors.systemGrey;
-    
+
+    // Unselected icons: almost black for light, lighter for dark
+    final unselectedColor = isDark
+        ? const Color(0xFFB0B0B0) // light grey for dark mode
+        : const Color(0xFF222222).withAlpha((255 * 0.85).toInt());
+
+    final selectedColor = isDark ? const Color(0xFF4F8CFF) : CupertinoColors.activeBlue;
+
     return Expanded(
       child: GestureDetector(
         onTap: () => widget.onTap(index),
@@ -187,18 +200,14 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
                 duration: const Duration(milliseconds: 200),
                 child: item.icon(
                   fontSize: iconSize,
-                  color: isSelected
-                      ? CupertinoColors.activeBlue
-                      : unselectedColor,
+                  color: isSelected ? selectedColor : unselectedColor,
                 ),
               ),
               const SizedBox(height: Spacing.xs),
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 200),
                 style: AppTypography.caption.copyWith(
-                  color: isSelected
-                      ? CupertinoColors.activeBlue
-                      : unselectedColor,
+                  color: isSelected ? selectedColor : unselectedColor,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),
                 child: Text(item.label),

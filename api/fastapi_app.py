@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from api.config import lifespan
+from api.middleware import setup_cors
 from api.routes.users import router as users_router
 from api.routes.teams import router as teams_router
 from api.routes.leagues import router as leagues_router
@@ -12,6 +13,9 @@ from api.auth.login import router as login_router
 
 
 app = FastAPI(title="VolleyLeague API", lifespan=lifespan)
+
+# Configure CORS middleware
+setup_cors(app)
 
 # Authentication routes
 app.include_router(login_router, prefix="/api", tags=["auth"])

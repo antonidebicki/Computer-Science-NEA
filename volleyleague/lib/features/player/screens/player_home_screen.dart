@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:provider/provider.dart';
 import '../../../design/index.dart';
 import '../../../state/cubits/player/player_data_cubit.dart';
 import '../../../state/cubits/player/player_data_state.dart';
@@ -9,6 +9,7 @@ import '../../../state/cubits/auth/auth_state.dart';
 import '../../../state/providers/theme_provider.dart';
 import '../../../services/repositories/league_repository.dart';
 import '../../../services/repositories/match_repository.dart';
+import '../../../services/repositories/team_repository.dart';
 import '../../../services/api_client.dart';
 import '../widgets/league_standings_widget.dart';
 import '../widgets/fixtures_widget.dart';
@@ -32,11 +33,13 @@ class PlayerHomeScreen extends StatelessWidget {
     final apiClient = ApiClient();
     final leagueRepository = LeagueRepository(apiClient);
     final matchRepository = MatchRepository(apiClient);
+    final teamRepository = TeamRepository(apiClient);
 
     return BlocProvider(
       create: (_) => PlayerDataCubit(
         leagueRepository: leagueRepository,
         matchRepository: matchRepository,
+        teamRepository: teamRepository,
         userId: userId,
       )..loadPlayerData(),
       child: const _PlayerHomeScreenContent(),
@@ -112,10 +115,10 @@ class _HomeTab extends StatelessWidget {
         ),
         child: CustomScrollView(
           slivers: [
-            // Navigation bar with transparent background to show gradient
             CupertinoSliverNavigationBar(
-              largeTitle: const Text('Welcome Back'),
-              backgroundColor: CupertinoColors.systemGroupedBackground.withOpacity(0.0),
+              largeTitle: const Text('Home'),
+              automaticBackgroundVisibility: false,
+              backgroundColor: Colors.transparent,
               border: null,
               trailing: CupertinoButton(
                 padding: EdgeInsets.zero,
@@ -183,7 +186,7 @@ class _HomeTab extends StatelessWidget {
                       left: Spacing.lg,
                       right: Spacing.lg,
                       top: Spacing.lg,
-                      bottom: 100, // Extra padding for floating nav bar
+                      bottom: 100,
                     ),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([

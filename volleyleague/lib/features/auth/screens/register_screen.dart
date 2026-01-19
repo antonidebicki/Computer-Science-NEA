@@ -200,8 +200,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     CupertinoButton(
                       padding: EdgeInsets.zero,
-                      onPressed: isLoading ? null : () => Navigator.of(context).maybePop(),
-                      minSize: 0,
+                      onPressed: isLoading ? null : () => Navigator.of(context).maybePop(), minimumSize: Size(0, 0),
                       child: Icon(
                         CupertinoIcons.back,
                         size: 28,
