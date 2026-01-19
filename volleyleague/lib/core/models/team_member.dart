@@ -1,4 +1,3 @@
-/// TeamMember model representing the relationship between a team and its members
 class TeamMember {
   final int teamId;
   final int userId;
@@ -16,7 +15,6 @@ class TeamMember {
     this.isLibero = false,
   });
 
-  /// Create a TeamMember from a JSON map
   factory TeamMember.fromJson(Map<String, dynamic> json) {
     return TeamMember(
       teamId: json['team_id'] as int,
@@ -28,7 +26,6 @@ class TeamMember {
     );
   }
 
-  /// Convert TeamMember to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'team_id': teamId,
@@ -40,7 +37,6 @@ class TeamMember {
     };
   }
 
-  /// Create a copy of TeamMember with some fields replaced
   TeamMember copyWith({
     int? teamId,
     int? userId,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../services/repositories/league_repository.dart';
 import '../../../services/repositories/match_repository.dart';
@@ -8,8 +9,8 @@ import '../../../core/models/enums.dart';
 import '../../../core/models/season.dart';
 import 'player_data_state.dart';
 
-/// Cubit to manage player's league and fixture data
-/// Fetches league standings and upcoming fixtures from the API
+// maybe will turn into a bloc one day but too complicated for now
+//i only have 50 hours 
 class PlayerDataCubit extends Cubit<PlayerDataState> {
   final LeagueRepository _leagueRepository;
   final MatchRepository _matchRepository;
@@ -26,7 +27,6 @@ class PlayerDataCubit extends Cubit<PlayerDataState> {
         _teamRepository = teamRepository ?? TeamRepository(ApiClient()),
         super(PlayerDataInitial());
 
-  /// Load player's league data and upcoming fixtures
   Future<void> loadPlayerData() async {
     try {
       emit(PlayerDataLoading());
@@ -40,7 +40,6 @@ class PlayerDataCubit extends Cubit<PlayerDataState> {
         return;
       }
 
-      // Find the team this player belongs to
       final playerTeam = await _teamRepository.getTeamForUser(userId);
 
       if (playerTeam == null) {
@@ -56,9 +55,9 @@ class PlayerDataCubit extends Cubit<PlayerDataState> {
       
       League? userLeague;
       Season? currentSeason;
+      //vs says this is unused. do not delete for some reason its being dumb
       List<Map<String, dynamic>>? seasonTeams;
 
-      // Find the first league/season that includes the player's team
       for (final league in leagues) {
         final seasons = await _leagueRepository.getSeasons(league.leagueId);
 
@@ -96,63 +95,82 @@ class PlayerDataCubit extends Cubit<PlayerDataState> {
         );
         standings = standingsJson.map((json) => StandingData.fromJson(json)).toList();
         
-        // Sort by points descending
         standings.sort((a, b) => b.points.compareTo(a.points));
       } catch (e) {
-        // Standings might not be initialized yet
-        print('Error loading standings: $e');
+        debugPrint('Error loading standings: $e');
       }
 
-      List<MatchData> upcomingFixtures = [];
+      List<MatchData> allUpcomingFixtures = [];
 
-      // Fetch upcoming matches for this season
       try {
-        final matches = await _matchRepository.getMatches(
-          seasonId: currentSeason.seasonId,
-          status: GameState.scheduled.value,
-        );
+        List<Season> playerSeasons = [];
+        Map<int, Map<int, String>> leagueSeasonTeamNames = {}; // seasonId -> (teamId -> teamName)
 
-        // Get team details for the season once
-        final teamNames = <int, String>{};
-        final seasonTeamsData =
-            seasonTeams ?? await _leagueRepository.getSeasonTeams(currentSeason.seasonId);
-        for (final teamJson in seasonTeamsData) {
-          teamNames[teamJson['team_id'] as int] = teamJson['team_name'] as String;
+        for (final league in leagues) {
+          final seasons = await _leagueRepository.getSeasons(league.leagueId);
+
+          for (final season in seasons) {
+            final teamsInSeason = await _leagueRepository.getSeasonTeams(season.seasonId);
+            final isInSeason = teamsInSeason.any(
+              (team) => team['team_id'] == playerTeam.teamId,
+            );
+
+            if (isInSeason) {
+              playerSeasons.add(season);
+              leagueSeasonTeamNames[season.seasonId] = {};
+              for (final teamJson in teamsInSeason) {
+                leagueSeasonTeamNames[season.seasonId]![teamJson['team_id'] as int] = 
+                    teamJson['team_name'] as String;
+              }
+            }
+          }
         }
 
-        final matchDataList = matches.map((match) {
-          return MatchData(
-            match: match,
-            homeTeamName: teamNames[match.homeTeamId] ?? 'Unknown',
-            awayTeamName: teamNames[match.awayTeamId] ?? 'Unknown',
-          );
-        }).toList();
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
 
-        // Sort by date (earliest first) and take only next few matches
-        matchDataList.sort((a, b) {
+        for (final season in playerSeasons) {
+          final matches = await _matchRepository.getMatches(
+            seasonId: season.seasonId,
+            status: GameState.scheduled.value,
+          );
+
+          final teamNames = leagueSeasonTeamNames[season.seasonId] ?? {};
+
+          for (final match in matches) {
+            if (match.matchDatetime != null && match.matchDatetime!.isAfter(today)) {
+              allUpcomingFixtures.add(MatchData(
+                match: match,
+                homeTeamName: teamNames[match.homeTeamId] ?? 'Unknown',
+                awayTeamName: teamNames[match.awayTeamId] ?? 'Unknown',
+              ));
+            }
+          }
+        }
+
+        allUpcomingFixtures.sort((a, b) {
           if (a.match.matchDatetime == null && b.match.matchDatetime == null) return 0;
           if (a.match.matchDatetime == null) return 1;
           if (b.match.matchDatetime == null) return -1;
           return a.match.matchDatetime!.compareTo(b.match.matchDatetime!);
         });
 
-        upcomingFixtures = matchDataList.take(5).toList();
+        allUpcomingFixtures = allUpcomingFixtures.take(5).toList();
       } catch (e) {
-        print('Error loading fixtures: $e');
+        debugPrint('Error loading fixtures: $e');
       }
 
       emit(PlayerDataLoaded(
         league: userLeague,
         standings: standings,
-        upcomingFixtures: upcomingFixtures,
+        upcomingFixtures: allUpcomingFixtures,
       ));
     } catch (e, stackTrace) {
-      print('Error loading player data: $e');
-      print(stackTrace);
+      debugPrint('Error loading player data: $e');
+      debugPrint('$stackTrace');
       emit(PlayerDataError('Failed to load data: ${e.toString()}'));
     }
   }
 
-  /// Refresh data
   Future<void> refresh() => loadPlayerData();
 }

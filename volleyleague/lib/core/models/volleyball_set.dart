@@ -1,4 +1,3 @@
-/// Set model representing a set within a match
 class VolleyballSet {
   final int setId;
   final int matchId;
@@ -16,7 +15,6 @@ class VolleyballSet {
     this.winnerTeamId,
   });
 
-  /// Create a VolleyballSet from a JSON map
   factory VolleyballSet.fromJson(Map<String, dynamic> json) {
     return VolleyballSet(
       setId: json['set_id'] as int,
@@ -28,7 +26,6 @@ class VolleyballSet {
     );
   }
 
-  /// Convert VolleyballSet to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'set_id': setId,
@@ -40,7 +37,6 @@ class VolleyballSet {
     };
   }
 
-  /// Create a copy of VolleyballSet with some fields replaced
   VolleyballSet copyWith({
     int? setId,
     int? matchId,

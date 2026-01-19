@@ -73,8 +73,6 @@ async def get_team_members(request: Request, team_id: int, user: dict = Depends(
         )
         if not team:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
-        
-        # Get all team members with user details
         rows = await connection.fetch(
             """
             SELECT 
@@ -109,7 +107,6 @@ async def join_team(
     """Allows a player to join a team."""
     pool = request.app.state.pool
     
-    # Only players can join teams
     if user.get("role") != "PLAYER":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -130,7 +127,6 @@ async def join_team(
         
         try:
             async with connection.transaction():
-                # Insert player into TeamMembers
                 row = await connection.fetchrow(
                     """
                     INSERT INTO "TeamMembers" (team_id, user_id, role_in_team, player_number, is_captain, is_libero)
@@ -144,13 +140,89 @@ async def join_team(
                     payload.is_libero,
                 )
                 
-                # Fetch user details to return complete TeamMemberOut
                 user_details = await connection.fetchrow(
                     'SELECT username, email, full_name, role as user_role FROM "Users" WHERE user_id = $1;',
                     user["user_id"],
                 )
                 
-                # Combine the data
+                result = dict(row)
+                result.update(dict(user_details))
+                
+                return TeamMemberOut(**result)
+            
+        except UniqueViolationError:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User is already a member of this team"
+            )
+
+
+@router.post("/teams/{team_id}/members", response_model=TeamMemberOut, status_code=status.HTTP_201_CREATED)
+async def add_team_member(
+    request: Request,
+    team_id: int,
+    payload: TeamJoinRequest,
+    user: dict = Depends(AuthUtils.require_role(["COACH", "ADMIN"]))
+) -> TeamMemberOut:
+    """ONLY and i mean ONLY use this for debugging. delete after frontend is done bc this allows admin to add anyone w/o their permission"""
+    pool = request.app.state.pool
+    
+    user_id = request.query_params.get("user_id")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="user_id query parameter is required"
+        )
+    
+    try:
+        user_id = int(user_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="user_id must be an integer"
+        )
+    
+    async with pool.acquire() as connection:
+        team = await connection.fetchrow(
+            'SELECT team_id FROM "Teams" WHERE team_id = $1;',
+            team_id,
+        )
+        if not team:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Team not found"
+            )
+        
+        user_to_add = await connection.fetchrow(
+            'SELECT user_id FROM "Users" WHERE user_id = $1;',
+            user_id,
+        )
+        if not user_to_add:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        try:
+            async with connection.transaction():
+                row = await connection.fetchrow(
+                    """
+                    INSERT INTO "TeamMembers" (team_id, user_id, role_in_team, player_number, is_captain, is_libero)
+                    VALUES ($1, $2, 'Player', $3, $4, $5)
+                    RETURNING team_id, user_id, role_in_team, player_number, is_captain, is_libero;
+                    """,
+                    team_id,
+                    user_id,
+                    payload.player_number,
+                    payload.is_captain,
+                    payload.is_libero,
+                )
+                
+                user_details = await connection.fetchrow(
+                    'SELECT username, email, full_name, role as user_role FROM "Users" WHERE user_id = $1;',
+                    user_id,
+                )
+                
                 result = dict(row)
                 result.update(dict(user_details))
                 
@@ -173,7 +245,6 @@ async def remove_team_member(
     """Remove a player from a team. Can be done by the player themselves or an admin."""
     pool = request.app.state.pool
     
-    # Check if user is admin or the player being removed
     is_admin = user.get("role") == "ADMIN"
     is_self = user.get("user_id") == user_id
     
@@ -184,7 +255,6 @@ async def remove_team_member(
         )
     
     async with pool.acquire() as connection:
-        # Verify team exists
         team = await connection.fetchrow(
             'SELECT team_id FROM "Teams" WHERE team_id = $1;',
             team_id,
@@ -195,7 +265,6 @@ async def remove_team_member(
                 detail="Team not found"
             )
         
-        # Check if membership exists
         member = await connection.fetchrow(
             'SELECT team_id, user_id FROM "TeamMembers" WHERE team_id = $1 AND user_id = $2;',
             team_id,
@@ -207,7 +276,6 @@ async def remove_team_member(
                 detail="User is not a member of this team"
             )
         
-        # Remove the member
         await connection.execute(
             'DELETE FROM "TeamMembers" WHERE team_id = $1 AND user_id = $2;',
             team_id,

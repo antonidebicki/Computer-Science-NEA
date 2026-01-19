@@ -1,16 +1,12 @@
 import '../../../core/models/league.dart';
 import '../../../core/models/match.dart';
 
-/// Base state for player data
 abstract class PlayerDataState {}
 
-/// Initial state
 class PlayerDataInitial extends PlayerDataState {}
 
-/// Loading state
 class PlayerDataLoading extends PlayerDataState {}
 
-/// Successfully loaded data
 class PlayerDataLoaded extends PlayerDataState {
   final League? league;
   final List<StandingData> standings;
@@ -23,14 +19,12 @@ class PlayerDataLoaded extends PlayerDataState {
   });
 }
 
-/// Error state
 class PlayerDataError extends PlayerDataState {
   final String message;
 
   PlayerDataError(this.message);
 }
 
-/// Data model for standings
 class StandingData {
   final int teamId;
   final String teamName;
@@ -55,12 +49,11 @@ class StandingData {
       matchesPlayed: json['matches_played'] as int,
       wins: json['wins'] as int,
       losses: json['losses'] as int,
-      points: json['league_points'] as int, // API uses 'league_points' field
+      points: json['league_points'] as int, 
     );
   }
 }
 
-/// Data model for match with team names
 class MatchData {
   final Match match;
   final String homeTeamName;

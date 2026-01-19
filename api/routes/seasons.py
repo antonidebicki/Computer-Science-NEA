@@ -128,7 +128,6 @@ async def generate_fixtures(
         )
         
         async with connection.transaction():
-            # Prevent duplicate fixture generation for the same season
             existing_count = await connection.fetchval(
                 'SELECT COUNT(*) FROM "Matches" WHERE season_id = $1',
                 season_id
@@ -141,8 +140,7 @@ async def generate_fixtures(
                 )
             
             for match in scheduled_matches:
-                # Database expects TIMESTAMP but we have date - default to 7:00 PM
-                match_datetime = datetime.datetime.combine(match['match_date'], datetime.time(19, 0))  # Default 7:00 PM
+                match_datetime = datetime.datetime.combine(match['match_date'], datetime.time(19, 0))  # defaults to 1900, js a common time no particular reason
                 
                 await connection.execute(
                     """
@@ -183,7 +181,6 @@ async def reset_season(request: Request, season_id: int, user: dict = Depends(Au
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
         
         async with connection.transaction():
-            # Calculate differentials and position in SQL to ensure consistency with archived data
             standings = await connection.fetch(
                 """
                 SELECT 
@@ -308,7 +305,6 @@ async def get_season_standings(
                 season_id
             )
         else:
-            # Calculate position dynamically since current standings can change
             rows = await connection.fetch(
                 """
                 SELECT 

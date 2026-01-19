@@ -1,4 +1,3 @@
-/// League model representing a volleyball league
 class League {
   final int leagueId;
   final String name;
@@ -16,7 +15,6 @@ class League {
     required this.createdAt,
   });
 
-  /// Create a League from a JSON map
   factory League.fromJson(Map<String, dynamic> json) {
     return League(
       leagueId: json['league_id'] as int,
@@ -28,7 +26,6 @@ class League {
     );
   }
 
-  /// Convert League to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'league_id': leagueId,
@@ -40,7 +37,6 @@ class League {
     };
   }
 
-  /// Create a copy of League with some fields replaced
   League copyWith({
     int? leagueId,
     String? name,

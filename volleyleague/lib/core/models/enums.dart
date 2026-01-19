@@ -2,7 +2,6 @@
 /// These correspond to the PostgreSQL ENUM types in the database schema
 library;
 
-/// User role types
 enum UserRole {
   admin('ADMIN'),
   coach('COACH'),
@@ -23,7 +22,6 @@ enum UserRole {
   String toString() => value;
 }
 
-/// Game/Match state types
 enum GameState {
   unscheduled('UNSCHEDULED'),
   scheduled('SCHEDULED'),
@@ -44,7 +42,7 @@ enum GameState {
   String toString() => value;
 }
 
-/// Payment status types
+// tbh these arent even being used but itll be implemented if i have enough time
 enum PaymentStatus {
   unpaid('UNPAID'),
   paid('PAID'),

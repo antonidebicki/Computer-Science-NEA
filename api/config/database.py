@@ -19,8 +19,6 @@ def get_pg_dsn() -> dict:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage database connection pool lifecycle."""
-    # Startup: create the database connection pool
     app.state.pool = await asyncpg.create_pool(**get_pg_dsn())
     yield
-    # Shutdown: close the database connection pool
     await app.state.pool.close()

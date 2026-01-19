@@ -47,14 +47,12 @@ class _LoginScreenState extends State<LoginScreen> {
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
-          // Navigate to role-based home screen
           final homeRoute = AppRouter.getHomeRouteForRole(state.user.role);
           Navigator.of(context).pushNamedAndRemoveUntil(
             homeRoute,
             (route) => false,
           );
         } else if (state is AuthError) {
-          // Show error message below password field
           setState(() {
             errorMessage = state.message;
           });
@@ -146,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   alignment: Alignment.center,
                   child: GestureDetector(
                     onTap: isLoading ? null : () {
-                      // TODO: Implement forgot password
+                      // TODO: implement the forgot password (this could take ages)
                     },
                     child: Text(
                       'Forgot Password?',

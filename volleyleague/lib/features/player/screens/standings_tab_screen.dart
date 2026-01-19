@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import '../../../design/index.dart';
 
-/// Placeholder screen for Standings tab in player navigation
+
 class StandingsTabScreen extends StatelessWidget {
   const StandingsTabScreen({super.key});
 
@@ -9,7 +9,7 @@ class StandingsTabScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       child: SafeArea(
-        bottom: false, // Don't add bottom padding, nav bar handles it
+        bottom: false,
         child: Padding(
           padding: const EdgeInsets.only(bottom: 100),
           child: Center(

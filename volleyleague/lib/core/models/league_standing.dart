@@ -1,4 +1,3 @@
-/// LeagueStanding model representing team standings in a season
 class LeagueStanding {
   final int standingId;
   final int seasonId;
@@ -26,17 +25,12 @@ class LeagueStanding {
     this.leaguePoints = 0,
   });
 
-  /// Calculate set difference (won - lost)
   int get setDifference => setsWon - setsLost;
-
-  /// Calculate point difference (won - lost)
   int get pointDifference => pointsWon - pointsLost;
 
-  /// Calculate win percentage
   double get winPercentage =>
       matchesPlayed > 0 ? (wins / matchesPlayed) * 100 : 0.0;
 
-  /// Create a LeagueStanding from a JSON map
   factory LeagueStanding.fromJson(Map<String, dynamic> json) {
     return LeagueStanding(
       standingId: json['standing_id'] as int,
@@ -53,7 +47,6 @@ class LeagueStanding {
     );
   }
 
-  /// Convert LeagueStanding to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'standing_id': standingId,
@@ -70,7 +63,6 @@ class LeagueStanding {
     };
   }
 
-  /// Create a copy of LeagueStanding with some fields replaced
   LeagueStanding copyWith({
     int? standingId,
     int? seasonId,

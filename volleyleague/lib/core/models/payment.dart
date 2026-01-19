@@ -1,6 +1,7 @@
 import 'enums.dart';
 
-/// Payment model representing payments between entities in the system
+/// payment model
+/// yet again completely unused but will maybe be implemented one day if i have time
 class Payment {
   final int paymentId;
   final int? requesterLeagueId;
@@ -26,14 +27,12 @@ class Payment {
     required this.createdAt,
   });
 
-  /// Check if payment is overdue
   bool get isOverdue {
     if (status == PaymentStatus.paid) return false;
     if (dueDate == null) return false;
     return DateTime.now().isAfter(dueDate!);
   }
 
-  /// Create a Payment from a JSON map
   factory Payment.fromJson(Map<String, dynamic> json) {
     return Payment(
       paymentId: json['payment_id'] as int,
@@ -53,7 +52,6 @@ class Payment {
     );
   }
 
-  /// Convert Payment to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'payment_id': paymentId,
@@ -69,7 +67,7 @@ class Payment {
     };
   }
 
-  /// Create a copy of Payment with some fields replaced
+/// creates a copy, god knows why i made this for but might be useful if implemented
   Payment copyWith({
     int? paymentId,
     int? requesterLeagueId,

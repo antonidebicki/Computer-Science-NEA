@@ -1,4 +1,3 @@
-/// Team model representing a volleyball team
 class Team {
   final int teamId;
   final String name;
@@ -14,7 +13,6 @@ class Team {
     required this.createdAt,
   });
 
-  /// Create a Team from a JSON map
   factory Team.fromJson(Map<String, dynamic> json) {
     return Team(
       teamId: json['team_id'] as int,
@@ -25,7 +23,6 @@ class Team {
     );
   }
 
-  /// Convert Team to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'team_id': teamId,
@@ -36,7 +33,6 @@ class Team {
     };
   }
 
-  /// Create a copy of Team with some fields replaced
   Team copyWith({
     int? teamId,
     String? name,

@@ -1,4 +1,3 @@
-/// SeasonTeam model representing the relationship between seasons and teams
 class SeasonTeam {
   final int seasonId;
   final int teamId;
@@ -10,7 +9,6 @@ class SeasonTeam {
     required this.joinDate,
   });
 
-  /// Create a SeasonTeam from a JSON map
   factory SeasonTeam.fromJson(Map<String, dynamic> json) {
     return SeasonTeam(
       seasonId: json['season_id'] as int,
@@ -19,7 +17,6 @@ class SeasonTeam {
     );
   }
 
-  /// Convert SeasonTeam to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'season_id': seasonId,
@@ -28,7 +25,6 @@ class SeasonTeam {
     };
   }
 
-  /// Create a copy of SeasonTeam with some fields replaced
   SeasonTeam copyWith({
     int? seasonId,
     int? teamId,

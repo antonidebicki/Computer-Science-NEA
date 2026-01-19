@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import '../../../design/index.dart';
 
-/// Placeholder screen for Fixtures tab in player navigation
+/// i made this file to stop errors, it will be deleted when the fixtures tab is (eventually) implemented
 class FixturesTabScreen extends StatelessWidget {
   const FixturesTabScreen({super.key});
 
@@ -9,7 +9,7 @@ class FixturesTabScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       child: SafeArea(
-        bottom: false, // Don't add bottom padding, nav bar handles it
+        bottom: false,
         child: Padding(
           padding: const EdgeInsets.only(bottom: 100),
           child: Center(

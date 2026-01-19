@@ -1,4 +1,3 @@
-/// Timeout model representing a timeout called during a set
 class Timeout {
   final int timeoutId;
   final int setId;
@@ -14,7 +13,6 @@ class Timeout {
     required this.timestamp,
   });
 
-  /// Create a Timeout from a JSON map
   factory Timeout.fromJson(Map<String, dynamic> json) {
     return Timeout(
       timeoutId: json['timeout_id'] as int,
@@ -25,7 +23,6 @@ class Timeout {
     );
   }
 
-  /// Convert Timeout to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'timeout_id': timeoutId,
@@ -36,7 +33,6 @@ class Timeout {
     };
   }
 
-  /// Create a copy of Timeout with some fields replaced
   Timeout copyWith({
     int? timeoutId,
     int? setId,

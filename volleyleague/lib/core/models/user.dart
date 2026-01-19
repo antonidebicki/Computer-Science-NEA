@@ -1,7 +1,6 @@
 import 'enums.dart';
 
-/// User model representing a user in the system
-/// This can be an admin, coach, player, or referee
+// can represent any type of user just general class, helpful for me to code the other ones w the models
 class User {
   final int userId;
   final String username;
@@ -21,22 +20,21 @@ class User {
     required this.createdAt,
   });
 
-  /// Create a User from a JSON map
+
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       userId: json['user_id'] as int,
       username: json['username'] as String,
-      hashedPassword: json['hashed_password'] as String? ?? '', // Optional for login responses
+      hashedPassword: json['hashed_password'] as String? ?? '', 
       email: json['email'] as String,
       fullName: json['full_name'] as String?,
       role: UserRole.fromString(json['role'] as String),
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at'] as String)
-          : DateTime.now(), // Default to now if not provided (login response)
+          : DateTime.now(), 
     );
   }
 
-  /// Convert User to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'user_id': userId,
@@ -49,7 +47,6 @@ class User {
     };
   }
 
-  /// Create a copy of User with some fields replaced
   User copyWith({
     int? userId,
     String? username,

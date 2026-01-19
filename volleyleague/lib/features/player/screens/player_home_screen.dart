@@ -18,18 +18,14 @@ import 'fixtures_tab_screen.dart';
 import 'standings_tab_screen.dart';
 import 'profile_tab_screen.dart';
 
-/// Main home screen for players with floating glass navigation
-/// Shows league standings and upcoming fixtures with gradient background
 class PlayerHomeScreen extends StatelessWidget {
   const PlayerHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Get current user ID from auth state
     final authState = context.read<AuthCubit>().state;
     final userId = authState is AuthAuthenticated ? authState.user.userId : 0;
 
-    // Create repositories
     final apiClient = ApiClient();
     final leagueRepository = LeagueRepository(apiClient);
     final matchRepository = MatchRepository(apiClient);
@@ -79,7 +75,6 @@ class _PlayerHomeScreenContentState extends State<_PlayerHomeScreenContent> {
           ],
         ),
         
-        // Floating navigation bar
         Positioned(
           left: 0,
           right: 0,
@@ -117,6 +112,7 @@ class _HomeTab extends StatelessWidget {
           slivers: [
             CupertinoSliverNavigationBar(
               largeTitle: const Text('Home'),
+              //dont change automaticBackgroundVisibility, took about an hour to find that this makes the background white
               automaticBackgroundVisibility: false,
               backgroundColor: Colors.transparent,
               border: null,
@@ -204,7 +200,6 @@ class _HomeTab extends StatelessWidget {
 
                         const SizedBox(height: Spacing.lg),
 
-                        // Fixtures Widget
                         FixturesWidget(
                           fixtures: state.upcomingFixtures,
                           onMoreFixtures: () {

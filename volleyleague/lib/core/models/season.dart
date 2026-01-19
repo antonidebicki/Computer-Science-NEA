@@ -1,4 +1,3 @@
-/// Season model representing a season within a league
 class Season {
   final int seasonId;
   final int leagueId;
@@ -16,7 +15,6 @@ class Season {
     this.isArchived = false,
   });
 
-  /// Create a Season from a JSON map
   factory Season.fromJson(Map<String, dynamic> json) {
     return Season(
       seasonId: json['season_id'] as int,
@@ -28,7 +26,6 @@ class Season {
     );
   }
 
-  /// Convert Season to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'season_id': seasonId,
@@ -40,7 +37,7 @@ class Season {
     };
   }
 
-  /// Create a copy of Season with some fields replaced
+
   Season copyWith({
     int? seasonId,
     int? leagueId,

@@ -1,4 +1,3 @@
-/// Substitution model representing a player substitution during a set
 class Substitution {
   final int substitutionId;
   final int setId;
@@ -18,7 +17,7 @@ class Substitution {
     required this.timestamp,
   });
 
-  /// Create a Substitution from a JSON map
+
   factory Substitution.fromJson(Map<String, dynamic> json) {
     return Substitution(
       substitutionId: json['substitution_id'] as int,
@@ -31,7 +30,6 @@ class Substitution {
     );
   }
 
-  /// Convert Substitution to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'substitution_id': substitutionId,
@@ -44,7 +42,6 @@ class Substitution {
     };
   }
 
-  /// Create a copy of Substitution with some fields replaced
   Substitution copyWith({
     int? substitutionId,
     int? setId,

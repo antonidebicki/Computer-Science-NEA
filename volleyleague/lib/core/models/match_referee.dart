@@ -1,4 +1,3 @@
-/// MatchReferee model representing referees assigned to a match
 class MatchReferee {
   final int matchId;
   final int userId;
@@ -10,7 +9,6 @@ class MatchReferee {
     required this.refereeRole,
   });
 
-  /// Create a MatchReferee from a JSON map
   factory MatchReferee.fromJson(Map<String, dynamic> json) {
     return MatchReferee(
       matchId: json['match_id'] as int,
@@ -19,7 +17,6 @@ class MatchReferee {
     );
   }
 
-  /// Convert MatchReferee to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'match_id': matchId,
@@ -28,7 +25,6 @@ class MatchReferee {
     };
   }
 
-  /// Create a copy of MatchReferee with some fields replaced
   MatchReferee copyWith({
     int? matchId,
     int? userId,

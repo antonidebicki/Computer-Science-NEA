@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../design/index.dart';
 import '../../../state/cubits/auth/auth_cubit.dart';
 
-/// Placeholder screen for Profile tab in player navigation
 class ProfileTabScreen extends StatelessWidget {
   const ProfileTabScreen({super.key});
 
@@ -11,7 +10,7 @@ class ProfileTabScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       child: SafeArea(
-        bottom: false, // Don't add bottom padding, nav bar handles it
+        bottom: false, 
         child: Padding(
           padding: const EdgeInsets.only(bottom: 100),
           child: Center(
