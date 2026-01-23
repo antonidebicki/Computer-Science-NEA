@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:volleyleague/features/player/screens/fixtures_screen.dart';
 import '../../../design/index.dart';
 import '../../../state/cubits/player/player_data_cubit.dart';
 import '../../../state/cubits/player/player_data_state.dart';
@@ -11,11 +12,10 @@ import '../../../services/repositories/league_repository.dart';
 import '../../../services/repositories/match_repository.dart';
 import '../../../services/repositories/team_repository.dart';
 import '../../../services/api_client.dart';
-import '../widgets/league_standings_widget.dart';
-import '../widgets/fixtures_widget.dart';
+import '../widgets/mini_standings_widget.dart';
+import '../widgets/mini_fixtures_widget.dart';
 import '../widgets/floating_glass_nav_bar.dart';
-import 'fixtures_tab_screen.dart';
-import 'standings_tab_screen.dart';
+import 'standings_screen.dart';
 import 'profile_tab_screen.dart';
 
 class PlayerHomeScreen extends StatelessWidget {
@@ -47,14 +47,15 @@ class _PlayerHomeScreenContent extends StatefulWidget {
   const _PlayerHomeScreenContent();
 
   @override
-  State<_PlayerHomeScreenContent> createState() => _PlayerHomeScreenContentState();
+  State<_PlayerHomeScreenContent> createState() =>
+      _PlayerHomeScreenContentState();
 }
 
 class _PlayerHomeScreenContentState extends State<_PlayerHomeScreenContent> {
   int _currentIndex = 0;
 
   final List<NavBarItem> _navItems = [
-    NavBarItem(icon: AppIcons.team, label: 'Home'),
+    NavBarItem(icon: AppIcons.home, label: 'Home'),
     NavBarItem(icon: AppIcons.match, label: 'Fixtures'),
     NavBarItem(icon: AppIcons.league, label: 'Standings'),
     NavBarItem(icon: AppIcons.profile, label: 'Profile'),
@@ -64,17 +65,16 @@ class _PlayerHomeScreenContentState extends State<_PlayerHomeScreenContent> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Content
         IndexedStack(
           index: _currentIndex,
           children: const [
             _HomeTab(),
-            FixturesTabScreen(),
-            StandingsTabScreen(),
+            FixturesScreen(),
+            StandingsScreen(),
             ProfileTabScreen(),
           ],
         ),
-        
+
         Positioned(
           left: 0,
           right: 0,
@@ -111,6 +111,7 @@ class _HomeTab extends StatelessWidget {
         child: CustomScrollView(
           slivers: [
             CupertinoSliverNavigationBar(
+              heroTag: 'home_nav_bar',
               largeTitle: const Text('Home'),
               //dont change automaticBackgroundVisibility, took about an hour to find that this makes the background white
               automaticBackgroundVisibility: false,
@@ -154,7 +155,9 @@ class _HomeTab extends StatelessWidget {
                           ),
                           const SizedBox(height: Spacing.sm),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: Spacing.xl),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: Spacing.xl,
+                            ),
                             child: Text(
                               state.message,
                               style: AppTypography.callout.copyWith(
@@ -186,11 +189,11 @@ class _HomeTab extends StatelessWidget {
                     ),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
-                        // League Standings Widget
-                        if (state.league != null && state.standings.isNotEmpty)
-                          LeagueStandingsWidget(
-                            leagueName: state.league!.name,
-                            standings: state.standings,
+                        // league standings widget - show first league if available
+                        if (state.leagueStandings.isNotEmpty)
+                          MiniStandingsWidget(
+                            leagueName: state.leagueStandings.first.league.name,
+                            standings: state.leagueStandings.first.standings,
                             onViewFullTable: () {
                               debugPrint('View full table tapped');
                             },
@@ -199,22 +202,22 @@ class _HomeTab extends StatelessWidget {
                           const NoLeagueWidget(),
 
                         const SizedBox(height: Spacing.lg),
-
-                        FixturesWidget(
+                        // TODO: look below
+                        // upcoming fixtures. need to look into the algorithm for this bc not sure if it works as intended
+                        MiniFixturesWidget(
                           fixtures: state.upcomingFixtures,
                           onMoreFixtures: () {
                             debugPrint('More fixtures tapped');
                           },
                         ),
+                        SizedBox(height: Spacing.xxxl),
                       ]),
                     ),
                   );
                 }
 
                 return const SliverFillRemaining(
-                  child: Center(
-                    child: Text('No data available'),
-                  ),
+                  child: Center(child: Text('No data available')),
                 );
               },
             ),

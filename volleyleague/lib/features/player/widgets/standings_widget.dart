@@ -2,50 +2,85 @@ import 'package:flutter/cupertino.dart';
 import '../../../design/index.dart';
 import '../../../state/cubits/player/player_data_state.dart';
 import 'standings_table_header.dart';
-import 'standing_row.dart' as widgets;
+import 'modern_standing_row.dart';
 
-/// Widget displaying league standings in a table format
-/// Shows team rankings with matches played, wins, losses, and points
-class LeagueStandingsWidget extends StatelessWidget {
+class LeagueStandingsData {
   final String leagueName;
   final List<StandingData> standings;
-  final VoidCallback? onViewFullTable;
 
-  const LeagueStandingsWidget({
-    super.key,
+  const LeagueStandingsData({
     required this.leagueName,
     required this.standings,
-    this.onViewFullTable,
   });
+}
+
+class StandingsWidget extends StatefulWidget {
+  final List<LeagueStandingsData> leagues;
+
+  const StandingsWidget({super.key, required this.leagues});
+
+  @override
+  State<StandingsWidget> createState() => _StandingsWidgetState();
+}
+
+class _StandingsWidgetState extends State<StandingsWidget> {
+  int _selectedLeagueIndex = 0;
 
   @override
   Widget build(BuildContext context) {
+    if (widget.leagues.isEmpty) {
+      return const NoLeagueWidget();
+    }
+
+    final currentLeague = widget.leagues[_selectedLeagueIndex];
+
     return AppGlassContainer(
       padding: const EdgeInsets.all(Spacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            leagueName,
-            style: AppTypography.headline.copyWith(
-              color: CupertinoColors.label,
+          if (widget.leagues.length > 1) ...[
+            AppDropdown<int>(
+              value: _selectedLeagueIndex,
+              width: double.infinity,
+              items: widget.leagues.asMap().entries.map((entry) {
+                return DropdownItem<int>(
+                  value: entry.key,
+                  label: entry.value.leagueName,
+                );
+              }).toList(),
+              onChanged: (index) {
+                setState(() {
+                  _selectedLeagueIndex = index;
+                });
+              },
             ),
-          ),
-          const SizedBox(height: Spacing.lg),
-          
+            const SizedBox(height: Spacing.lg),
+          ] else ...[
+            Text(
+              currentLeague.leagueName,
+              style: AppTypography.headline.copyWith(
+                color: CupertinoColors.label,
+              ),
+            ),
+            const SizedBox(height: Spacing.lg),
+          ],
+
           // Table header
           const StandingsTableHeader(),
           const SizedBox(height: Spacing.sm),
-          
+
           // Standings rows
-          ...standings.asMap().entries.map((entry) {
+          ...currentLeague.standings.asMap().entries.map((entry) {
             final index = entry.key;
             final standing = entry.value;
             return Padding(
               padding: EdgeInsets.only(
-                bottom: index < standings.length - 1 ? Spacing.sm : 0,
+                bottom: index < currentLeague.standings.length - 1
+                    ? Spacing.sm
+                    : 0,
               ),
-              child: widgets.StandingRow(
+              child: ModernStandingRow(
                 position: index + 1,
                 teamName: standing.teamName,
                 matchesPlayed: standing.matchesPlayed,
@@ -55,39 +90,13 @@ class LeagueStandingsWidget extends StatelessWidget {
               ),
             );
           }),
-          
-          // View full table button
-          if (onViewFullTable != null) ...[
-            const SizedBox(height: Spacing.lg),
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: onViewFullTable,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'View full table',
-                    style: AppTypography.callout.copyWith(
-                      color: CupertinoColors.activeBlue,
-                    ),
-                  ),
-                  const SizedBox(width: Spacing.xs),
-                  const Icon(
-                    CupertinoIcons.arrow_right,
-                    size: 16,
-                    color: CupertinoColors.activeBlue,
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
     );
   }
 }
 
-/// Widget shown when user doesn't belong to any league
+/// shown when user doesn't belong to any league
 class NoLeagueWidget extends StatelessWidget {
   const NoLeagueWidget({super.key});
 
@@ -97,10 +106,7 @@ class NoLeagueWidget extends StatelessWidget {
       padding: const EdgeInsets.all(Spacing.xl),
       child: Column(
         children: [
-          AppIcons.league(
-            fontSize: 48,
-            color: CupertinoColors.systemGrey,
-          ),
+          AppIcons.league(fontSize: 48, color: CupertinoColors.systemGrey),
           const SizedBox(height: Spacing.lg),
           Text(
             'No League',

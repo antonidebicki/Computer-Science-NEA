@@ -18,9 +18,9 @@ class FixtureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Format date as d/MM/yyyy
-    final day = date.day;
-    final month = date.month;
+    // format date as dd/MM/yyyy
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
     final year = date.year;
     final formattedDate = '$day/$month/$year';
 

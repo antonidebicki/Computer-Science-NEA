@@ -97,12 +97,11 @@ def _get_next_allowed_weekday(date: datetime.date, allowed_weekdays: List[int]) 
     current_date = date
     
     for _ in range(7):
-        # weekday() returns 0=Monday, 6=Sunday
         if allowed_weekdays[current_date.weekday()]:
             return current_date
         current_date += timedelta(days=1)
     
-    # if reaches here then someone screwed up
+    # if reaches here then something is wrong in the code
     return date
 
 

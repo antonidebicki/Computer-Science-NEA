@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 /// Brand and semantic colors for the app.
 class AppColors {
@@ -16,4 +17,11 @@ class AppColors {
   // Backgrounds
   static const Color background = Color(0xFFF7F7FA);
   static const Color surface = Colors.white;
+
+  // liquid glass
+  static const LiquidGlassSettings liquidGlassSettings = LiquidGlassSettings(
+          blur: 10,
+          glassColor: Color(0x80F2F2F7),
+          lightIntensity: 1.2,
+        );
 }

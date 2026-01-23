@@ -61,7 +61,7 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
   @override
   Widget build(BuildContext context) {
     final isDark = Provider.of<ThemeProvider>(context).isDark;
-    // Colors for light/dark mode
+    // colors for dark mode and light mode tho kinda useless rn bc dark mode toggle isnt
     final navBarGlassColor = isDark
         ? const Color(0xCC23242B) // dark glass, alpha 0xCC
         : const Color(0x4DFFFFFF); // light glass, alpha 0x4D

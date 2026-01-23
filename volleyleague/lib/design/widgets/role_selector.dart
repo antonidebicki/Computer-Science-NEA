@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import '../tokens/spacing.dart';
+import '../tokens/colors.dart';
 
-/// Apple-style liquid glass segmented control for role selection
 class AppRoleSelector extends StatelessWidget {
   final String selectedRole;
   final ValueChanged<String> onChanged;
@@ -21,11 +21,7 @@ class AppRoleSelector extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: FakeGlass(
         shape: LiquidRoundedSuperellipse(borderRadius: 12),
-        settings: const LiquidGlassSettings(
-          blur: 10,
-          glassColor: Color(0x80F2F2F7),
-          lightIntensity: 1.2,
-        ),
+        settings: AppColors.liquidGlassSettings,
         child: Container(
           decoration: BoxDecoration(
             color: CupertinoColors.systemGrey6.withValues(alpha: 0.5),

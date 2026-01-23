@@ -48,10 +48,9 @@ class _LoginScreenState extends State<LoginScreen> {
       listener: (context, state) {
         if (state is AuthAuthenticated) {
           final homeRoute = AppRouter.getHomeRouteForRole(state.user.role);
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            homeRoute,
-            (route) => false,
-          );
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil(homeRoute, (route) => false);
         } else if (state is AuthError) {
           setState(() {
             errorMessage = state.message;
@@ -68,17 +67,28 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: Spacing.lg),
                 Center(
-                  child: AppIcons.volleyball(fontSize: 40, color: CupertinoColors.activeBlue),
+                  child: AppIcons.volleyball(
+                    fontSize: 40,
+                    color: CupertinoColors.activeBlue,
+                  ),
                 ),
                 const SizedBox(height: Spacing.xl),
                 Text(
                   'Sign in to your\nAccount',
-                  style: CupertinoTheme.of(context).textTheme.navLargeTitleTextStyle.copyWith(fontWeight: FontWeight.bold),
+                  style: CupertinoTheme.of(context)
+                      .textTheme
+                      .navLargeTitleTextStyle
+                      .copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: Spacing.sm),
-                Text(
-                  'Enter your username and password to log in',
-                  style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(color: CupertinoColors.systemGrey),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Enter your username and password to log in',
+                    style: CupertinoTheme.of(context).textTheme.textStyle
+                        .copyWith(color: CupertinoColors.systemGrey),
+                    maxLines: 2,
+                  ),
                 ),
                 const SizedBox(height: Spacing.xxl),
                 IgnorePointer(
@@ -96,9 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ignoring: isLoading,
                   child: Opacity(
                     opacity: isLoading ? 0.5 : 1.0,
-                    child: AppPasswordField(
-                      controller: passwordController,
-                    ),
+                    child: AppPasswordField(controller: passwordController),
                   ),
                 ),
                 if (errorMessage != null) ...[
@@ -143,9 +151,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.center,
                   child: GestureDetector(
-                    onTap: isLoading ? null : () {
-                      // TODO: implement the forgot password (this could take ages)
-                    },
+                    onTap: isLoading
+                        ? null
+                        : () {
+                            // TODO: implement the forgot password (this could take ages)
+                          },
                     child: Text(
                       'Forgot Password?',
                       style: AppTextStyles.activeBlueRegular.copyWith(
@@ -158,7 +168,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 AppPrimaryButton(
                   onPressed: isLoading ? null : _handleLogin,
                   child: isLoading
-                      ? const CupertinoActivityIndicator(color: CupertinoColors.white)
+                      ? const CupertinoActivityIndicator(
+                          color: CupertinoColors.white,
+                        )
                       : const Text('Login'),
                 ),
                 const SizedBox(height: Spacing.xl),
@@ -172,7 +184,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     AppTextButtonX(
                       onPressed: isLoading
                           ? null
-                          : () => Navigator.of(context).pushNamed(AppRouter.register),
+                          : () => Navigator.of(
+                              context,
+                            ).pushNamed(AppRouter.register),
                       child: Text(
                         'Sign Up',
                         style: AppTextStyles.activeBlueSemibold.copyWith(

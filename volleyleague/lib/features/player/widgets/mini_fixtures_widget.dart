@@ -3,24 +3,36 @@ import '../../../design/index.dart';
 import '../../../state/cubits/player/player_data_state.dart';
 import 'fixture_card.dart';
 
-class FixturesWidget extends StatelessWidget {
+// the mini widgets for the home page
+class MiniFixturesWidget extends StatelessWidget {
   final List<MatchData> fixtures;
+  final VoidCallback? onMoreFixtures;
 
-  const FixturesWidget({
+  const MiniFixturesWidget({
     super.key,
     required this.fixtures,
+    this.onMoreFixtures,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return AppGlassContainer(
+      padding: const EdgeInsets.all(Spacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'Next Fixtures',
+            style: AppTypography.headline.copyWith(
+              color: CupertinoColors.label,
+            ),
+          ),
+          const SizedBox(height: Spacing.lg),
+          
           if (fixtures.isEmpty)
             _buildNoFixtures()
           else
-            ...fixtures.asMap().entries.map((entry) {
+            ...fixtures.take(3).toList().asMap().entries.map((entry) {
               final index = entry.key;
               final fixture = entry.value;
               return Padding(
@@ -31,14 +43,39 @@ class FixturesWidget extends StatelessWidget {
                   homeTeam: fixture.homeTeamName,
                   awayTeam: fixture.awayTeamName,
                   date: fixture.match.matchDatetime ?? DateTime.now(),
-                    venue: fixture.match.venue,
+                  venue: fixture.match.venue,
+                ),
+              );
+            }),
+          
+          if (onMoreFixtures != null && fixtures.isNotEmpty) ...[
+            const SizedBox(height: Spacing.lg),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: onMoreFixtures,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'More Fixtures',
+                    style: AppTypography.callout.copyWith(
+                      color: CupertinoColors.activeBlue,
+                    ),
                   ),
-                  );
-                }),
+                  const SizedBox(width: Spacing.xs),
+                  const Icon(
+                    CupertinoIcons.arrow_right,
+                    size: 16,
+                    color: CupertinoColors.activeBlue,
+                  ),
                 ],
               ),
-              );
-            }
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
   Widget _buildNoFixtures() {
     return Center(

@@ -14,15 +14,15 @@ from api.auth.login import router as login_router
 
 app = FastAPI(title="VolleyLeague API", lifespan=lifespan)
 
-# Configure CORS middleware
+# fixes dumb cors middleware issue when running in chrome do not remove
 setup_cors(app)
 
-# Authentication routes
+#auth routes
 app.include_router(login_router, prefix="/api", tags=["auth"])
 app.include_router(auth_router, prefix="/api", tags=["auth"])
 app.include_router(register_router, prefix="/api/auth", tags=["auth"])
 
-# Entity routes
+#user + other objects? routes
 app.include_router(users_router, prefix="/api", tags=["users"])
 app.include_router(teams_router, prefix="/api", tags=["teams"])
 app.include_router(leagues_router, prefix="/api", tags=["leagues"])

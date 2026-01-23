@@ -37,4 +37,24 @@ class TeamRepository {
 
     return null;
   }
+
+  /// Returns all teams the user belongs to
+  Future<List<Team>> getTeamsForUser(int userId) async {
+    final teams = await getTeams();
+    final userTeams = <Team>[];
+
+    for (final team in teams) {
+      try {
+        final members = await getTeamMembers(team.teamId);
+        if (members.any((member) => member.userId == userId)) {
+          userTeams.add(team);
+        }
+      } catch (e) {
+        // Keep looking even if one team lookup fails
+        Log.e('Error checking team ${team.teamId} members: $e');
+      }
+    }
+
+    return userTeams;
+  }
 }

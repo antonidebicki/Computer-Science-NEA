@@ -153,5 +153,6 @@ async def initialise_season_standings(connection: asyncpg.Connection, season_id:
     )
     
     #extract number of rows inserted from result string like "INSERT 0 3"
+    #kinda for debugging but has some actual use
     rows_inserted = int(result.split()[-1]) if result else 0
     return rows_inserted

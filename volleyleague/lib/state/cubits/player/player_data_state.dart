@@ -7,14 +7,22 @@ class PlayerDataInitial extends PlayerDataState {}
 
 class PlayerDataLoading extends PlayerDataState {}
 
-class PlayerDataLoaded extends PlayerDataState {
-  final League? league;
+class LeagueStandingsInfo {
+  final League league;
   final List<StandingData> standings;
+
+  const LeagueStandingsInfo({
+    required this.league,
+    required this.standings,
+  });
+}
+
+class PlayerDataLoaded extends PlayerDataState {
+  final List<LeagueStandingsInfo> leagueStandings;
   final List<MatchData> upcomingFixtures;
 
   PlayerDataLoaded({
-    this.league,
-    required this.standings,
+    required this.leagueStandings,
     required this.upcomingFixtures,
   });
 }

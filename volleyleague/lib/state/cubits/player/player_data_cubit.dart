@@ -4,7 +4,6 @@ import '../../../services/repositories/league_repository.dart';
 import '../../../services/repositories/match_repository.dart';
 import '../../../services/repositories/team_repository.dart';
 import '../../../services/api_client.dart';
-import '../../../core/models/league.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/models/season.dart';
 import 'player_data_state.dart';
@@ -30,11 +29,9 @@ class PlayerDataCubit extends Cubit<PlayerDataState> {
   Future<void> loadPlayerData() async {
     try {
       emit(PlayerDataLoading());
-
       if (userId == 0) {
         emit(PlayerDataLoaded(
-          league: null,
-          standings: const [],
+          leagueStandings: const [],
           upcomingFixtures: const [],
         ));
         return;
@@ -44,8 +41,7 @@ class PlayerDataCubit extends Cubit<PlayerDataState> {
 
       if (playerTeam == null) {
         emit(PlayerDataLoaded(
-          league: null,
-          standings: const [],
+          leagueStandings: const [],
           upcomingFixtures: const [],
         ));
         return;
@@ -53,92 +49,85 @@ class PlayerDataCubit extends Cubit<PlayerDataState> {
 
       final leagues = await _leagueRepository.getLeagues();
       
-      League? userLeague;
-      Season? currentSeason;
-      //vs says this is unused. do not delete for some reason its being dumb
-      List<Map<String, dynamic>>? seasonTeams;
+      // Get all teams for this player
+      final playerTeams = await _teamRepository.getTeamsForUser(userId);
+      Set<int> playerTeamIds = {};
+      
+      for (final team in playerTeams) {
+        playerTeamIds.add(team.teamId);
+        debugPrint('Player team: ${team.name} (ID: ${team.teamId})');
+      }
+
+      List<LeagueStandingsInfo> leagueStandingsList = [];
+      List<Season> allSeasons = [];
+      Map<int, Map<int, String>> leagueSeasonTeamNames = {}; // seasonId -> (teamId -> teamName)
 
       for (final league in leagues) {
         final seasons = await _leagueRepository.getSeasons(league.leagueId);
 
         for (final season in seasons) {
           final teamsInSeason = await _leagueRepository.getSeasonTeams(season.seasonId);
-          final isInSeason = teamsInSeason.any(
-            (team) => team['team_id'] == playerTeam.teamId,
+          
+          final hasPlayerTeam = teamsInSeason.any(
+            (team) => playerTeamIds.contains(team['team_id']),
           );
 
-          if (isInSeason) {
-            userLeague = league;
-            currentSeason = season;
-            seasonTeams = teamsInSeason;
-            break;
+          if (hasPlayerTeam) {
+            allSeasons.add(season);
+            leagueSeasonTeamNames[season.seasonId] = {};
+            for (final teamJson in teamsInSeason) {
+              leagueSeasonTeamNames[season.seasonId]![teamJson['team_id'] as int] = 
+                  teamJson['team_name'] as String;
+            }
+            debugPrint('Added season: ${season.name} (ID: ${season.seasonId}) for league: ${league.name}');
+
+            try {
+              final standingsJson = await _leagueRepository.getStandings(
+                season.seasonId,
+                archived: false,
+              );
+              final standings = standingsJson.map((json) => StandingData.fromJson(json)).toList();
+              standings.sort((a, b) => b.points.compareTo(a.points));
+              
+              leagueStandingsList.add(LeagueStandingsInfo(
+                league: league,
+                standings: standings,
+              ));
+            } catch (e) {
+              debugPrint('Error loading standings for ${league.name}: $e');
+            }
           }
         }
-
-        if (userLeague != null) break;
       }
 
-      if (userLeague == null || currentSeason == null) {
+      if (leagueStandingsList.isEmpty) {
         emit(PlayerDataLoaded(
-          league: null,
-          standings: const [],
+          leagueStandings: const [],
           upcomingFixtures: const [],
         ));
         return;
       }
 
-      List<StandingData> standings = [];
-      try {
-        final standingsJson = await _leagueRepository.getStandings(
-          currentSeason.seasonId,
-          archived: false,
-        );
-        standings = standingsJson.map((json) => StandingData.fromJson(json)).toList();
-        
-        standings.sort((a, b) => b.points.compareTo(a.points));
-      } catch (e) {
-        debugPrint('Error loading standings: $e');
-      }
 
       List<MatchData> allUpcomingFixtures = [];
 
       try {
-        List<Season> playerSeasons = [];
-        Map<int, Map<int, String>> leagueSeasonTeamNames = {}; // seasonId -> (teamId -> teamName)
-
-        for (final league in leagues) {
-          final seasons = await _leagueRepository.getSeasons(league.leagueId);
-
-          for (final season in seasons) {
-            final teamsInSeason = await _leagueRepository.getSeasonTeams(season.seasonId);
-            final isInSeason = teamsInSeason.any(
-              (team) => team['team_id'] == playerTeam.teamId,
-            );
-
-            if (isInSeason) {
-              playerSeasons.add(season);
-              leagueSeasonTeamNames[season.seasonId] = {};
-              for (final teamJson in teamsInSeason) {
-                leagueSeasonTeamNames[season.seasonId]![teamJson['team_id'] as int] = 
-                    teamJson['team_name'] as String;
-              }
-            }
-          }
-        }
-
-        final now = DateTime.now();
-        final today = DateTime(now.year, now.month, now.day);
-
-        for (final season in playerSeasons) {
+        for (final season in allSeasons) {
           final matches = await _matchRepository.getMatches(
             seasonId: season.seasonId,
             status: GameState.scheduled.value,
           );
 
           final teamNames = leagueSeasonTeamNames[season.seasonId] ?? {};
+          debugPrint('Season ${season.seasonId} has ${matches.length} scheduled matches');
 
           for (final match in matches) {
-            if (match.matchDatetime != null && match.matchDatetime!.isAfter(today)) {
+            final isPlayerMatch = playerTeamIds.contains(match.homeTeamId) || 
+                 playerTeamIds.contains(match.awayTeamId);
+            debugPrint('Match: ${match.homeTeamId} vs ${match.awayTeamId}, isPlayerMatch: $isPlayerMatch');
+            
+            // dont change bc if you do there will be hundreds of fixtures loaded for every player
+            if (isPlayerMatch && match.matchDatetime != null) {
               allUpcomingFixtures.add(MatchData(
                 match: match,
                 homeTeamName: teamNames[match.homeTeamId] ?? 'Unknown',
@@ -148,27 +137,31 @@ class PlayerDataCubit extends Cubit<PlayerDataState> {
           }
         }
 
+        debugPrint('Total fixtures loaded: ${allUpcomingFixtures.length}');
+
+        // Sort all fixtures chronologically
         allUpcomingFixtures.sort((a, b) {
           if (a.match.matchDatetime == null && b.match.matchDatetime == null) return 0;
           if (a.match.matchDatetime == null) return 1;
           if (b.match.matchDatetime == null) return -1;
           return a.match.matchDatetime!.compareTo(b.match.matchDatetime!);
         });
-
-        allUpcomingFixtures = allUpcomingFixtures.take(5).toList();
       } catch (e) {
         debugPrint('Error loading fixtures: $e');
       }
 
-      emit(PlayerDataLoaded(
-        league: userLeague,
-        standings: standings,
-        upcomingFixtures: allUpcomingFixtures,
-      ));
+      if (!isClosed) {
+        emit(PlayerDataLoaded(
+          leagueStandings: leagueStandingsList,
+          upcomingFixtures: allUpcomingFixtures,
+        ));
+      }
     } catch (e, stackTrace) {
       debugPrint('Error loading player data: $e');
       debugPrint('$stackTrace');
-      emit(PlayerDataError('Failed to load data: ${e.toString()}'));
+      if (!isClosed) {
+        emit(PlayerDataError('Failed to load data: ${e.toString()}'));
+      }
     }
   }
 
