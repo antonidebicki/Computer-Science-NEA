@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import '../../../design/index.dart';
 
-/// Modern standing row with enhanced visual design
 class ModernStandingRow extends StatelessWidget {
   final int position;
   final String teamName;
@@ -22,14 +22,13 @@ class ModernStandingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determine medal color for top 3 positions
     Color? positionColor;
     if (position == 1) {
-      positionColor = const Color(0xFFFFD700); // Gold
+      positionColor = const Color(0xFFFFD700).withValues(alpha:0.5); // Gold
     } else if (position == 2) {
-      positionColor = const Color(0xFFC0C0C0); // Silver
+      positionColor = const Color(0xFFC0C0C0).withValues(alpha:0.5); // Silver
     } else if (position == 3) {
-      positionColor = const Color(0xFFCD7F32); // Bronze
+      positionColor = const Color(0xFFCD7F32).withValues(alpha:0.5) ; // Bronze
     }
 
     return Container(
@@ -43,12 +42,18 @@ class ModernStandingRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Position with medal for top 3
           Container(
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: positionColor ?? CupertinoColors.systemGrey5,
+              color: position == 1 ? null : (positionColor ?? CupertinoColors.systemGrey5),
+              gradient: position == 1
+                  ? const LinearGradient(
+                      colors: [Color(0xffad9c00), Colors.yellow, Color(0xffad9c00)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null,
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -65,20 +70,20 @@ class ModernStandingRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: Spacing.md),
-          
-          // Team name
+
           Expanded(
-            child: Text(
-              teamName,
-              style: AppTypography.callout.copyWith(
-                color: CupertinoColors.label,
-                fontWeight: FontWeight.w600,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Text(
+                teamName,
+                style: AppTypography.callout.copyWith(
+                  color: CupertinoColors.label,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              overflow: TextOverflow.ellipsis,
             ),
           ),
-          
-          // Stats
+
           _buildStatCell(matchesPlayed, width: 32),
           _buildStatCell(wins, width: 28, color: CupertinoColors.systemGreen),
           _buildStatCell(losses, width: 28, color: CupertinoColors.systemRed),

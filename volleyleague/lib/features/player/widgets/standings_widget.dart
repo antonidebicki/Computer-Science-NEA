@@ -14,6 +14,7 @@ class LeagueStandingsData {
   });
 }
 
+
 class StandingsWidget extends StatefulWidget {
   final List<LeagueStandingsData> leagues;
 
@@ -65,12 +66,10 @@ class _StandingsWidgetState extends State<StandingsWidget> {
             ),
             const SizedBox(height: Spacing.lg),
           ],
-
-          // Table header
-          const StandingsTableHeader(),
+          //temporary hardcoded pixel values just to make it look nice on the main testing device
+          const StandingsTableHeader(cellWidthMultiplier: 1, leftPadding: 25.0, rightPadding: 15.0),
           const SizedBox(height: Spacing.sm),
 
-          // Standings rows
           ...currentLeague.standings.asMap().entries.map((entry) {
             final index = entry.key;
             final standing = entry.value;

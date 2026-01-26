@@ -194,6 +194,20 @@ CREATE TABLE "ArchivedStandings" (
   FOREIGN KEY (team_id) REFERENCES "Teams"(team_id) ON DELETE CASCADE
 );
 
+-- Invitation Code Usage Tracking (Optional: for analytics/auditing)
+-- Stores which users accepted invitations from which other users
+CREATE TABLE "InvitationCodes" (
+  invitation_id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL,
+  invited_user_id INT NOT NULL,
+  code_date DATE NOT NULL, -- Date when the code was used
+  redeemed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES "Users"(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (invited_user_id) REFERENCES "Users"(user_id) ON DELETE CASCADE,
+  -- Unique constraint: a user can only accept an invitation once per day
+  UNIQUE (invited_user_id, user_id, code_date)
+);
+
 -- Table for the desirable "Payments" feature
 
 CREATE TABLE "Payments" (

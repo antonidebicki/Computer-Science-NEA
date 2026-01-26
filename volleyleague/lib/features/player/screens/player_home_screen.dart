@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:volleyleague/features/player/screens/fixtures_screen.dart';
+import 'package:volleyleague/features/player/screens/fixtures.dart';
 import '../../../design/index.dart';
 import '../../../state/cubits/player/player_data_cubit.dart';
 import '../../../state/cubits/player/player_data_state.dart';
@@ -15,8 +15,8 @@ import '../../../services/api_client.dart';
 import '../widgets/mini_standings_widget.dart';
 import '../widgets/mini_fixtures_widget.dart';
 import '../widgets/floating_glass_nav_bar.dart';
-import 'standings_screen.dart';
-import 'profile_tab_screen.dart';
+import 'profile.dart';
+import 'standings.dart';
 
 class PlayerHomeScreen extends StatelessWidget {
   const PlayerHomeScreen({super.key});
@@ -71,7 +71,7 @@ class _PlayerHomeScreenContentState extends State<_PlayerHomeScreenContent> {
             _HomeTab(),
             FixturesScreen(),
             StandingsScreen(),
-            ProfileTabScreen(),
+            ProfileScreen(),
           ],
         ),
 

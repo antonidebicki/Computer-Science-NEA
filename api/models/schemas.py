@@ -258,3 +258,22 @@ class MatchProcessingResult(BaseModel):
     home_updates: TeamStandingUpdate
     away_updates: TeamStandingUpdate
 
+
+class InvitationCodeResponse(BaseModel):
+    """Response containing the user's daily invitation code."""
+    user_id: int
+    invitation_code: str
+    code_generated_date: str  # YYYY-MM-DD format
+
+
+class InvitationCodeValidation(BaseModel):
+    """Request to validate and redeem an invitation code."""
+    invitation_code: str = Field(..., min_length=6, max_length=6, description="6-digit invitation code")
+
+
+class InvitationCodeRedeemResponse(BaseModel):
+    """Response after successfully redeeming an invitation code."""
+    success: bool
+    message: str
+    sender_user_id: Optional[int] = None
+    sender_username: Optional[str] = None
