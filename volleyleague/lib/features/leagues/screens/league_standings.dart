@@ -13,6 +13,7 @@ class LeagueStandingsScreen extends StatelessWidget {
   final League league;
   final List<LeagueStanding> standings;
   final Map<int, Team> teams;
+  final Future<void> Function()? onRefresh;
 
   const LeagueStandingsScreen({
     super.key,
@@ -20,6 +21,7 @@ class LeagueStandingsScreen extends StatelessWidget {
     required this.league,
     required this.standings,
     required this.teams,
+    this.onRefresh,
   });
 
   @override
@@ -43,33 +45,40 @@ class LeagueStandingsScreen extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: AppGradients.backgroundGradient(context, isDark: isDark),
         ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(Spacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Header
-                LeagueHeaderCard(
-                  league: league,
-                  season: season,
+        child: CustomScrollView(
+          slivers: [
+            if (onRefresh != null)
+              CupertinoSliverRefreshControl(
+                onRefresh: onRefresh,
+              ),
+            SliverSafeArea(
+              sliver: SliverPadding(
+                padding: const EdgeInsets.all(Spacing.lg),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    // Header
+                    LeagueHeaderCard(
+                      league: league,
+                      season: season,
+                    ),
+                    
+                    const SizedBox(height: Spacing.lg),
+                    
+                    // Standings Table
+                    StandingsTable(
+                      standings: sortedStandings,
+                      teams: teams,
+                    ),
+                    
+                    const SizedBox(height: Spacing.lg),
+                    
+                    // Legend
+                    const StandingsLegend(),
+                  ]),
                 ),
-                
-                const SizedBox(height: Spacing.lg),
-                
-                // Standings Table
-                StandingsTable(
-                  standings: sortedStandings,
-                  teams: teams,
-                ),
-                
-                const SizedBox(height: Spacing.lg),
-                
-                // Legend
-                const StandingsLegend(),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

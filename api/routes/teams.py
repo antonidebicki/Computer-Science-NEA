@@ -1,8 +1,17 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, Request, status, Depends
 from asyncpg.exceptions import UniqueViolationError
-from api.models import TeamOut, TeamCreate, TeamMemberOut, TeamJoinRequest
+from api.models import (
+    TeamOut, 
+    TeamCreate, 
+    TeamMemberOut, 
+    TeamJoinRequest,
+    CreateTeamInvitationRequest,
+    TeamJoinRequestOut,
+    RespondToJoinRequestRequest,
+)
 from api.auth import AuthUtils
+from api.services.invitation_code_engine import InvitationCodeEngine
 
 router = APIRouter()
 
@@ -282,3 +291,371 @@ async def remove_team_member(
             user_id,
         )
 
+
+# ==================== TEAM INVITATION ENDPOINTS ====================
+
+@router.post("/teams/invitations", response_model=TeamJoinRequestOut, status_code=status.HTTP_201_CREATED)
+async def create_team_invitation(
+    request: Request,
+    payload: CreateTeamInvitationRequest,
+    user: dict = Depends(AuthUtils.require_role(["COACH", "ADMIN"]))
+) -> TeamJoinRequestOut:
+    """
+    Create a team invitation using a player's invitation code (ADMIN/COACH action).
+    
+    Flow:
+    1. Player generates and shares their daily invitation code
+    2. Admin/coach enters player's code and team ID
+    3. Code is validated to find the player
+    4. Invitation is created with PENDING status
+    5. Player receives invitation and can accept/reject
+    """
+    pool = request.app.state.pool
+    admin_user_id = user.get("user_id")
+    
+    async with pool.acquire() as connection:
+        # Verify team exists and user has permission
+        team = await connection.fetchrow(
+            'SELECT team_id, name, created_by_user_id FROM "Teams" WHERE team_id = $1;',
+            payload.team_id,
+        )
+        if not team:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Team not found"
+            )
+        
+        # Check permission
+        if team['created_by_user_id'] != admin_user_id and user.get('role') != 'ADMIN':
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to invite players to this team"
+            )
+        
+        # Validate invitation code - find which player owns this code
+        users_rows = await connection.fetch(
+            'SELECT user_id, username FROM "Users" WHERE role = \'PLAYER\' ORDER BY user_id;'
+        )
+        
+        player_user_id = None
+        player_username = None
+        
+        for row in users_rows:
+            test_user_id = row["user_id"]
+            if InvitationCodeEngine.validate_code(test_user_id, payload.invitation_code):
+                player_user_id = test_user_id
+                player_username = row["username"]
+                break
+        
+        if player_user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired invitation code"
+            )
+        
+        # Check if player is already a member
+        existing_member = await connection.fetchrow(
+            'SELECT team_id FROM "TeamMembers" WHERE team_id = $1 AND user_id = $2;',
+            payload.team_id,
+            player_user_id,
+        )
+        if existing_member:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Player is already a member of this team"
+            )
+        
+        # Check for existing pending invitation
+        existing_invitation = await connection.fetchrow(
+            '''SELECT join_request_id FROM "TeamJoinRequests" 
+               WHERE team_id = $1 AND user_id = $2 AND status = 'PENDING';''',
+            payload.team_id,
+            player_user_id,
+        )
+        if existing_invitation:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Player already has a pending invitation for this team"
+            )
+        
+        # Create the invitation
+        try:
+            row = await connection.fetchrow(
+                '''
+                INSERT INTO "TeamJoinRequests" 
+                (team_id, user_id, invited_by_user_id, invitation_code, player_number, is_libero, status)
+                VALUES ($1, $2, $3, $4, $5, $6, 'PENDING')
+                RETURNING join_request_id, team_id, user_id, invited_by_user_id, 
+                          invitation_code, status, player_number, is_libero, created_at, responded_at;
+                ''',
+                payload.team_id,
+                player_user_id,
+                admin_user_id,
+                payload.invitation_code,
+                payload.player_number,
+                payload.is_libero,
+            )
+            
+            result = dict(row)
+            result['team_name'] = team['name']
+            result['invited_by_username'] = user.get('username')
+            result['username'] = player_username
+            
+            return TeamJoinRequestOut(**result)
+            
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create invitation"
+            ) from exc
+
+
+@router.get("/teams/invitations/sent", response_model=dict)
+async def get_sent_invitations(
+    request: Request,
+    team_id: int = None,
+    user: dict = Depends(AuthUtils.require_role(["COACH", "ADMIN"]))
+) -> dict:
+    """
+    Get all invitations sent by the current user (admin/coach checking sent invitations).
+    Optionally filter by team_id.
+    """
+    pool = request.app.state.pool
+    user_id = user.get("user_id")
+    
+    async with pool.acquire() as connection:
+        if team_id:
+            # Verify user has permission for this team
+            team = await connection.fetchrow(
+                'SELECT created_by_user_id FROM "Teams" WHERE team_id = $1;',
+                team_id,
+            )
+            if not team:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Team not found"
+                )
+            
+            # Only team creator or admin can view invitations
+            if team['created_by_user_id'] != user_id and user.get('role') != 'ADMIN':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You don't have permission to view invitations for this team"
+                )
+            
+            rows = await connection.fetch(
+                '''
+                SELECT 
+                    jr.join_request_id, jr.team_id, jr.user_id, jr.invited_by_user_id,
+                    jr.invitation_code, jr.status, jr.player_number, jr.is_libero,
+                    jr.created_at, jr.responded_at,
+                    t.name as team_name,
+                    u.username,
+                    inv.username as invited_by_username
+                FROM "TeamJoinRequests" jr
+                JOIN "Teams" t ON jr.team_id = t.team_id
+                JOIN "Users" u ON jr.user_id = u.user_id
+                JOIN "Users" inv ON jr.invited_by_user_id = inv.user_id
+                WHERE jr.team_id = $1 AND jr.invited_by_user_id = $2
+                ORDER BY jr.created_at DESC;
+                ''',
+                team_id,
+                user_id,
+            )
+        else:
+            # Get invitations for all teams created by this user
+            rows = await connection.fetch(
+                '''
+                SELECT 
+                    jr.join_request_id, jr.team_id, jr.user_id, jr.invited_by_user_id,
+                    jr.invitation_code, jr.status, jr.player_number, jr.is_libero,
+                    jr.created_at, jr.responded_at,
+                    t.name as team_name,
+                    u.username,
+                    inv.username as invited_by_username
+                FROM "TeamJoinRequests" jr
+                JOIN "Teams" t ON jr.team_id = t.team_id
+                JOIN "Users" u ON jr.user_id = u.user_id
+                JOIN "Users" inv ON jr.invited_by_user_id = inv.user_id
+                WHERE jr.invited_by_user_id = $1
+                ORDER BY jr.created_at DESC;
+                ''',
+                user_id,
+            )
+        
+        invitations = [TeamJoinRequestOut(**dict(row)) for row in rows]
+        return {"invitations": [inv.model_dump() for inv in invitations]}
+
+
+@router.get("/teams/invitations/received", response_model=dict)
+async def get_received_invitations(
+    request: Request,
+    user: dict = Depends(AuthUtils.require_role(["PLAYER"]))
+) -> dict:
+    """Get all invitations received by the current user (player checking their invitations)."""
+    pool = request.app.state.pool
+    user_id = user.get("user_id")
+    
+    async with pool.acquire() as connection:
+        rows = await connection.fetch(
+            '''
+            SELECT 
+                jr.join_request_id, jr.team_id, jr.user_id, jr.invited_by_user_id,
+                jr.invitation_code, jr.status, jr.player_number, jr.is_libero,
+                jr.created_at, jr.responded_at,
+                t.name as team_name,
+                u.username,
+                inv.username as invited_by_username
+            FROM "TeamJoinRequests" jr
+            JOIN "Teams" t ON jr.team_id = t.team_id
+            JOIN "Users" u ON jr.user_id = u.user_id
+            JOIN "Users" inv ON jr.invited_by_user_id = inv.user_id
+            WHERE jr.user_id = $1
+            ORDER BY jr.created_at DESC;
+            ''',
+            user_id,
+        )
+        
+        invitations = [TeamJoinRequestOut(**dict(row)) for row in rows]
+        return {"invitations": [inv.model_dump() for inv in invitations]}
+
+
+@router.post("/teams/invitations/{join_request_id}/respond", response_model=TeamJoinRequestOut)
+async def respond_to_invitation(
+    request: Request,
+    join_request_id: int,
+    payload: RespondToJoinRequestRequest,
+    user: dict = Depends(AuthUtils.require_role(["PLAYER"]))
+) -> TeamJoinRequestOut:
+    """
+    Accept or reject a team invitation (PLAYER action).
+    If accepted, the player is added to the team.
+    """
+    pool = request.app.state.pool
+    user_id = user.get("user_id")
+    
+    async with pool.acquire() as connection:
+        # Get the invitation
+        invitation = await connection.fetchrow(
+            '''
+            SELECT jr.*, t.created_by_user_id, t.name as team_name,
+                   u.username, inv.username as invited_by_username
+            FROM "TeamJoinRequests" jr
+            JOIN "Teams" t ON jr.team_id = t.team_id
+            JOIN "Users" u ON jr.user_id = u.user_id
+            JOIN "Users" inv ON jr.invited_by_user_id = inv.user_id
+            WHERE jr.join_request_id = $1;
+            ''',
+            join_request_id,
+        )
+        
+        if not invitation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Invitation not found"
+            )
+        
+        # Check permission - only the invited player can respond
+        if invitation['user_id'] != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only respond to your own invitations"
+            )
+        
+        # Check if already responded
+        if invitation['status'] != 'PENDING':
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invitation has already been {invitation['status'].lower()}"
+            )
+        
+        async with connection.transaction():
+            # Update the invitation
+            new_status = 'ACCEPTED' if payload.accept else 'REJECTED'
+            updated_invitation = await connection.fetchrow(
+                '''
+                UPDATE "TeamJoinRequests"
+                SET status = $1, responded_at = CURRENT_TIMESTAMP
+                WHERE join_request_id = $2
+                RETURNING join_request_id, team_id, user_id, invited_by_user_id,
+                          invitation_code, status, player_number, is_libero, 
+                          created_at, responded_at;
+                ''',
+                new_status,
+                join_request_id,
+            )
+            
+            # If accepted, add the player to the team
+            if payload.accept:
+                try:
+                    await connection.execute(
+                        '''
+                        INSERT INTO "TeamMembers" 
+                        (team_id, user_id, role_in_team, player_number, is_captain, is_libero)
+                        VALUES ($1, $2, 'Player', $3, FALSE, $4);
+                        ''',
+                        invitation['team_id'],
+                        user_id,
+                        payload.player_number or invitation['player_number'],
+                        payload.is_libero or invitation['is_libero'],
+                    )
+                except UniqueViolationError:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="You are already a member of this team"
+                    )
+            
+            result = dict(updated_invitation)
+            result['team_name'] = invitation['team_name']
+            result['username'] = invitation['username']
+            result['invited_by_username'] = invitation['invited_by_username']
+            
+            return TeamJoinRequestOut(**result)
+
+
+@router.delete("/teams/invitations/{join_request_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_invitation(
+    request: Request,
+    join_request_id: int,
+    user: dict = Depends(AuthUtils.get_current_user)
+):
+    """
+    Delete/cancel an invitation.
+    Admin can cancel sent invitations, player can decline pending invitations.
+    """
+    pool = request.app.state.pool
+    user_id = user.get("user_id")
+    
+    async with pool.acquire() as connection:
+        invitation = await connection.fetchrow(
+            'SELECT user_id, invited_by_user_id, status FROM "TeamJoinRequests" WHERE join_request_id = $1;',
+            join_request_id,
+        )
+        
+        if not invitation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Invitation not found"
+            )
+        
+        # Admin who sent it or player who received it can delete
+        is_sender = invitation['invited_by_user_id'] == user_id
+        is_recipient = invitation['user_id'] == user_id
+        
+        if not (is_sender or is_recipient):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only delete invitations you sent or received"
+            )
+        
+        # Can only delete pending invitations
+        if invitation['status'] != 'PENDING':
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Can only delete pending invitations"
+            )
+        
+        await connection.execute(
+            'DELETE FROM "TeamJoinRequests" WHERE join_request_id = $1;',
+            join_request_id,
+        )

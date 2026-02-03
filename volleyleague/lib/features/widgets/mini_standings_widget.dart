@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
-import '../../../design/index.dart';
-import '../../../state/cubits/player/player_data_state.dart';
+import '../../design/index.dart';
+import '../../state/cubits/player/player_data_state.dart';
 import 'standings_table_header.dart';
 import 'standing_row.dart' as widgets;
 

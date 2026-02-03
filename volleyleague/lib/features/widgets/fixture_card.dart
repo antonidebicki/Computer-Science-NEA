@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import '../../../design/index.dart';
+import '../../design/index.dart';
 
 /// Reusable fixture card displaying match information
 class FixtureCard extends StatelessWidget {

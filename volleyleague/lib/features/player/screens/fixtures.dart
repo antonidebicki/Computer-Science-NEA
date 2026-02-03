@@ -5,7 +5,7 @@ import '../../../design/index.dart';
 import '../../../state/cubits/player/player_data_cubit.dart';
 import '../../../state/cubits/player/player_data_state.dart';
 import '../../../state/providers/theme_provider.dart';
-import '../widgets/fixtures_widget.dart';
+import '../../widgets/fixtures_widget.dart';
 import '../../../design/widgets/toggle.dart';
 
 class FixturesScreen extends StatefulWidget {
@@ -29,6 +29,11 @@ class _FixturesScreenState extends State<FixturesScreen> {
         ),
         child: CustomScrollView(
           slivers: [
+            CupertinoSliverRefreshControl(
+              onRefresh: () async {
+                context.read<PlayerDataCubit>().refresh();
+              },
+            ),
             CupertinoSliverNavigationBar(
               heroTag: 'fixtures_nav_bar',
               largeTitle: const Text('Fixtures'),

@@ -15,6 +15,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final firstNameController = TextEditingController();
   final lastNameController = TextEditingController();
+  final usernameController = TextEditingController();
   final emailController = TextEditingController();
   final dobController = TextEditingController();
   final passwordController = TextEditingController();
@@ -24,6 +25,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     firstNameController.dispose();
     lastNameController.dispose();
+    usernameController.dispose();
     emailController.dispose();
     dobController.dispose();
     passwordController.dispose();
@@ -33,12 +35,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _handleRegister() {
     final firstName = firstNameController.text.trim();
     final lastName = lastNameController.text.trim();
+    final username = usernameController.text.trim();
     final email = emailController.text.trim();
     final dob = dobController.text.trim();
     final password = passwordController.text.trim();
 
     // Validation
-    if (firstName.isEmpty || lastName.isEmpty || email.isEmpty || dob.isEmpty || password.isEmpty) {
+    if (firstName.isEmpty || lastName.isEmpty || username.isEmpty || email.isEmpty || dob.isEmpty || password.isEmpty) {
       showCupertinoDialog(
         context: context,
         builder: (context) => CupertinoAlertDialog(
@@ -55,12 +58,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    if (password.length < 6) {
+    if (username.length < 3) {
       showCupertinoDialog(
         context: context,
         builder: (context) => CupertinoAlertDialog(
-          title: const Text('Invalid Password'),
-          content: const Text('Password must be at least 6 characters'),
+          title: const Text('Invalid Username'),
+          content: const Text('Username must be at least 3 characters'),
           actions: [
             CupertinoDialogAction(
               child: const Text('OK'),
@@ -72,8 +75,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    // Use email as username for now
-    final username = email.split('@')[0];
+    if (password.length < 8) {
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Invalid Password'),
+          content: const Text('Password must be at least 8 characters with uppercase, lowercase, and a number'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     final fullName = '$firstName $lastName';
 
     context.read<AuthCubit>().register(
@@ -235,6 +253,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         AppTextField(
                           controller: lastNameController,
                           placeholder: 'Last Name',
+                        ),
+                        const SizedBox(height: Spacing.md),
+                        AppTextField(
+                          controller: usernameController,
+                          placeholder: 'Username',
+                          suffix: const Padding(
+                            padding: EdgeInsets.only(right: Spacing.sm),
+                            child: Icon(
+                              CupertinoIcons.person,
+                              color: CupertinoColors.systemGrey,
+                            ),
+                          ),
                         ),
                         const SizedBox(height: Spacing.md),
                         AppTextField(

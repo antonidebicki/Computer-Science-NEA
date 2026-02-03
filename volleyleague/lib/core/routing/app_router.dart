@@ -4,6 +4,7 @@ import 'package:volleyleague/core/models/enums.dart';
 import 'package:volleyleague/features/auth/screens/login_screen.dart';
 import 'package:volleyleague/features/auth/screens/register_screen.dart';
 import 'package:volleyleague/features/player/screens/player_home_screen.dart';
+import 'package:volleyleague/features/teams/screens/coach_home_screen.dart';
 import 'package:volleyleague/state/cubits/auth/auth_cubit.dart';
 
 /// routes for the app
@@ -29,9 +30,8 @@ class AppRouter {
         );
       
       case coachHome:
-        // TODO: Create CoachHomeScreen
         return CupertinoPageRoute(
-          builder: (_) => _createPlaceholderScreen('Coach Home'),
+          builder: (_) => const CoachHomeScreen(),
         );
       
       case adminHome:
@@ -73,7 +73,7 @@ class AppRouter {
       case UserRole.player:
         return const PlayerHomeScreen();
       case UserRole.coach:
-        return _createPlaceholderScreen('Coach Home');
+        return const CoachHomeScreen();
       case UserRole.admin:
         return _createPlaceholderScreen('Admin Home');
       case UserRole.referee:

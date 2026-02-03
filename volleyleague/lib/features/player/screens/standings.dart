@@ -5,7 +5,7 @@ import '../../../design/index.dart';
 import '../../../state/cubits/player/player_data_cubit.dart';
 import '../../../state/cubits/player/player_data_state.dart';
 import '../../../state/providers/theme_provider.dart';
-import '../widgets/standings_widget.dart';
+import '../../widgets/standings_widget.dart';
 
 class StandingsScreen extends StatefulWidget {
   const StandingsScreen({super.key});
@@ -26,6 +26,11 @@ class _StandingsScreenState extends State<StandingsScreen> {
         ),
         child: CustomScrollView(
           slivers: [
+            CupertinoSliverRefreshControl(
+              onRefresh: () async {
+                context.read<PlayerDataCubit>().refresh();
+              },
+            ),
             CupertinoSliverNavigationBar(
               heroTag: 'standings_nav_bar',
               largeTitle: const Text('Standings'),

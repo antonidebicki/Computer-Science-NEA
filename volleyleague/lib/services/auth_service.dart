@@ -8,7 +8,6 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 class AuthService {
   static const _storage = FlutterSecureStorage();
   
-  // Storage keys
   static const _accessTokenKey = 'access_token';
   static const _refreshTokenKey = 'refresh_token';
   static const _userIdKey = 'user_id';

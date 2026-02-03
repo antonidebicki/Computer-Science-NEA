@@ -1,10 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:volleyleague/features/player/screens/fixtures.dart';
 import '../../../design/index.dart';
-import '../../../state/cubits/player/player_data_cubit.dart';
-import '../../../state/cubits/player/player_data_state.dart';
+import '../../../state/cubits/coach/team_data_cubit.dart';
+import '../../../state/cubits/coach/team_data_state.dart';
 import '../../../state/cubits/auth/auth_cubit.dart';
 import '../../../state/cubits/auth/auth_state.dart';
 import '../../../state/providers/theme_provider.dart';
@@ -12,14 +11,13 @@ import '../../../services/repositories/league_repository.dart';
 import '../../../services/repositories/match_repository.dart';
 import '../../../services/repositories/team_repository.dart';
 import '../../../services/api_client.dart';
-import '../../widgets/mini_standings_widget.dart';
-import '../../widgets/mini_fixtures_widget.dart';
 import '../../widgets/floating_glass_nav_bar.dart';
-import 'profile.dart';
-import 'standings.dart';
+import 'team.dart';
+import 'coach_fixtures_screen.dart';
+import 'coach_profile_screen.dart';
 
-class PlayerHomeScreen extends StatelessWidget {
-  const PlayerHomeScreen({super.key});
+class CoachHomeScreen extends StatelessWidget {
+  const CoachHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,32 +30,32 @@ class PlayerHomeScreen extends StatelessWidget {
     final teamRepository = TeamRepository(apiClient);
 
     return BlocProvider(
-      create: (_) => PlayerDataCubit(
+      create: (_) => TeamDataCubit(
         leagueRepository: leagueRepository,
         matchRepository: matchRepository,
         teamRepository: teamRepository,
         userId: userId,
-      )..loadPlayerData(),
-      child: const _PlayerHomeScreenContent(),
+      )..loadTeamData(),
+      child: const _CoachHomeScreenContent(),
     );
   }
 }
 
-class _PlayerHomeScreenContent extends StatefulWidget {
-  const _PlayerHomeScreenContent();
+class _CoachHomeScreenContent extends StatefulWidget {
+  const _CoachHomeScreenContent();
 
   @override
-  State<_PlayerHomeScreenContent> createState() =>
-      _PlayerHomeScreenContentState();
+  State<_CoachHomeScreenContent> createState() =>
+      _CoachHomeScreenContentState();
 }
 
-class _PlayerHomeScreenContentState extends State<_PlayerHomeScreenContent> {
+class _CoachHomeScreenContentState extends State<_CoachHomeScreenContent> {
   int _currentIndex = 0;
 
   final List<NavBarItem> _navItems = [
     NavBarItem(icon: AppIcons.home, label: 'Home'),
     NavBarItem(icon: AppIcons.match, label: 'Fixtures'),
-    NavBarItem(icon: AppIcons.league, label: 'Standings'),
+    NavBarItem(icon: AppIcons.team, label: 'Team'),
     NavBarItem(icon: AppIcons.profile, label: 'Profile'),
   ];
 
@@ -69,9 +67,9 @@ class _PlayerHomeScreenContentState extends State<_PlayerHomeScreenContent> {
           index: _currentIndex,
           children: const [
             _HomeTab(),
-            FixturesScreen(),
-            StandingsScreen(),
-            ProfileScreen(),
+            CoachFixturesScreen(),
+            TeamScreen(),
+            CoachProfileScreen(),
           ],
         ),
 
@@ -112,7 +110,7 @@ class _HomeTab extends StatelessWidget {
           slivers: [
             CupertinoSliverRefreshControl(
               onRefresh: () async {
-                context.read<PlayerDataCubit>().refresh();
+                context.read<TeamDataCubit>().refresh();
               },
             ),
             CupertinoSliverNavigationBar(
@@ -125,16 +123,16 @@ class _HomeTab extends StatelessWidget {
               trailing: CupertinoButton(
                 padding: EdgeInsets.zero,
                 onPressed: () {
-                  context.read<PlayerDataCubit>().refresh();
+                  context.read<TeamDataCubit>().refresh();
                 },
                 child: const Icon(CupertinoIcons.refresh),
               ),
             ),
 
             // Content
-            BlocBuilder<PlayerDataCubit, PlayerDataState>(
+            BlocBuilder<TeamDataCubit, TeamDataState>(
               builder: (context, state) {
-                if (state is PlayerDataLoading) {
+                if (state is TeamDataLoading) {
                   return const SliverFillRemaining(
                     child: Center(
                       child: CupertinoActivityIndicator(radius: 16),
@@ -142,7 +140,7 @@ class _HomeTab extends StatelessWidget {
                   );
                 }
 
-                if (state is PlayerDataError) {
+                if (state is TeamDataError) {
                   return SliverFillRemaining(
                     child: Center(
                       child: Column(
@@ -174,7 +172,7 @@ class _HomeTab extends StatelessWidget {
                           const SizedBox(height: Spacing.xl),
                           CupertinoButton.filled(
                             onPressed: () {
-                              context.read<PlayerDataCubit>().refresh();
+                              context.read<TeamDataCubit>().refresh();
                             },
                             child: const Text('Retry'),
                           ),
@@ -184,7 +182,7 @@ class _HomeTab extends StatelessWidget {
                   );
                 }
 
-                if (state is PlayerDataLoaded) {
+                if (state is TeamDataLoaded) {
                   return SliverPadding(
                     padding: const EdgeInsets.only(
                       left: Spacing.lg,
@@ -194,27 +192,7 @@ class _HomeTab extends StatelessWidget {
                     ),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
-                        // league standings widget - show first league if available
-                        if (state.leagueStandings.isNotEmpty)
-                          MiniStandingsWidget(
-                            leagueName: state.leagueStandings.first.league.name,
-                            standings: state.leagueStandings.first.standings,
-                            onViewFullTable: () {
-                              debugPrint('View full table tapped');
-                            },
-                          )
-                        else
-                          const NoLeagueWidget(),
-
-                        const SizedBox(height: Spacing.lg),
-                        // TODO: look below
-                        // upcoming fixtures. need to look into the algorithm for this bc not sure if it works as intended
-                        MiniFixturesWidget(
-                          fixtures: state.upcomingFixtures,
-                          onMoreFixtures: () {
-                            debugPrint('More fixtures tapped');
-                          },
-                        ),
+                        // Widgets to be added here later
                         SizedBox(height: Spacing.xxxl),
                       ]),
                     ),

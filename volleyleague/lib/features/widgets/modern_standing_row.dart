@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import '../../../design/index.dart';
+import '../../design/index.dart';
 
 class ModernStandingRow extends StatelessWidget {
   final int position;

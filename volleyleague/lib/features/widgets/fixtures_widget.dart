@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
-import '../../../design/index.dart';
-import '../../../state/cubits/player/player_data_state.dart';
+import '../../design/index.dart';
+import '../../state/cubits/player/player_data_state.dart';
 import 'fixture_card.dart';
 
 class FixturesWidget extends StatelessWidget {

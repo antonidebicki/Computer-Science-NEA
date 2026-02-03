@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:provider/provider.dart';
-import '../../../design/index.dart';
-import '../../../state/providers/theme_provider.dart';
+import '../../design/index.dart';
+import '../../state/providers/theme_provider.dart';
 
 /// Floating liquid glass navigation bar with animated sliding selector
 /// Matches the design with a capsule-shaped container with icons

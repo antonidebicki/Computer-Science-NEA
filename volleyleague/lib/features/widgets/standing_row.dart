@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import '../../../design/index.dart';
+import '../../design/index.dart';
 
 /// Reusable standing row for displaying team statistics
 class StandingRow extends StatelessWidget {

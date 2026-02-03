@@ -10,6 +10,7 @@ DROP TABLE IF EXISTS "Matches" CASCADE;
 DROP TABLE IF EXISTS "SeasonTeams" CASCADE;
 DROP TABLE IF EXISTS "Seasons" CASCADE;
 DROP TABLE IF EXISTS "TeamMembers" CASCADE;
+DROP TABLE IF EXISTS "TeamJoinRequests" CASCADE;
 DROP TABLE IF EXISTS "Leagues" CASCADE;
 DROP TABLE IF EXISTS "Teams" CASCADE;
 DROP TABLE IF EXISTS "Users" CASCADE;
@@ -18,10 +19,12 @@ DROP TABLE IF EXISTS "Users" CASCADE;
 DROP TYPE IF EXISTS game_status CASCADE;
 DROP TYPE IF EXISTS game_states CASCADE;
 DROP TYPE IF EXISTS user_role CASCADE;
+DROP TYPE IF EXISTS join_request_status CASCADE;
 
 -- ENUM type for user roles and game states to ensure data integrity.
 CREATE TYPE user_role AS ENUM ('ADMIN', 'COACH', 'PLAYER', 'REFEREE');
 CREATE TYPE game_states AS ENUM ('UNSCHEDULED', 'SCHEDULED', 'FINISHED', 'PROCESSED');
+CREATE TYPE join_request_status AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED');
 
 -- Core Tables for Users, Teams, and Leagues
 
@@ -67,6 +70,25 @@ CREATE TABLE "TeamMembers" (
   PRIMARY KEY (team_id, user_id),
   FOREIGN KEY (team_id) REFERENCES "Teams"(team_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES "Users"(user_id) ON DELETE CASCADE
+);
+
+-- Join Requests: Tracks pending invitations to join teams
+CREATE TABLE "TeamJoinRequests" (
+  join_request_id SERIAL PRIMARY KEY,
+  team_id INT NOT NULL,
+  user_id INT NOT NULL, -- The player who wants to join
+  invited_by_user_id INT NOT NULL, -- The admin/coach who sent the invitation
+  invitation_code VARCHAR(6) NOT NULL,
+  status join_request_status DEFAULT 'PENDING',
+  player_number INT,
+  is_libero BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  responded_at TIMESTAMP,
+  FOREIGN KEY (team_id) REFERENCES "Teams"(team_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES "Users"(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (invited_by_user_id) REFERENCES "Users"(user_id) ON DELETE CASCADE,
+  -- Ensure a user can only have one pending request per team
+  UNIQUE (team_id, user_id, status)
 );
 
 CREATE TABLE "Seasons" (
@@ -173,7 +195,7 @@ CREATE TABLE "LeagueStandings" (
   UNIQUE (season_id, team_id)
 );
 
--- Archived standings for historical season data (SC2.2 requirement)
+-- archived standings for historical season data (SC2.2 requirement)
 CREATE TABLE "ArchivedStandings" (
   archive_id SERIAL PRIMARY KEY,
   season_id INT NOT NULL,
@@ -183,19 +205,19 @@ CREATE TABLE "ArchivedStandings" (
   losses INT NOT NULL,
   sets_won INT NOT NULL,
   sets_lost INT NOT NULL,
-  set_diff INT NOT NULL, -- Calculated: sets_won - sets_lost
+  set_diff INT NOT NULL, 
   points_won INT NOT NULL,
   points_lost INT NOT NULL,
-  point_diff INT NOT NULL, -- Calculated: points_won - points_lost
+  point_diff INT NOT NULL, 
   league_points INT NOT NULL,
-  final_position INT, -- Final ranking position when archived
+  final_position INT, 
   archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (season_id) REFERENCES "Seasons"(season_id) ON DELETE CASCADE,
   FOREIGN KEY (team_id) REFERENCES "Teams"(team_id) ON DELETE CASCADE
 );
 
--- Invitation Code Usage Tracking (Optional: for analytics/auditing)
--- Stores which users accepted invitations from which other users
+-- invitationcode tracking so i can show it in the frontend
+-- stores which users have accepted invitations from which other users
 CREATE TABLE "InvitationCodes" (
   invitation_id SERIAL PRIMARY KEY,
   user_id INT NOT NULL,
@@ -210,24 +232,25 @@ CREATE TABLE "InvitationCodes" (
 
 -- Table for the desirable "Payments" feature
 
+-- This is created for future development and im not done w it yet
 CREATE TABLE "Payments" (
   payment_id SERIAL PRIMARY KEY,
-  -- The entity requesting payment (e.g., a league or team)
+  -- entity requesting payment (e.g league or team)
   requester_league_id INT,
   requester_team_id INT,
-  -- The entity being asked to pay (e.g., a team or player)
+  -- entity being asked to pay (e.g team or player)
   payer_team_id INT,
   payer_user_id INT,
   amount DECIMAL(10, 2) NOT NULL,
   description VARCHAR(255) NOT NULL,
   due_date DATE,
-  status VARCHAR(50) DEFAULT 'UNPAID', -- e.g., UNPAID, PAID, OVERDUE
+  status VARCHAR(50) DEFAULT 'UNPAID', -- e.g UNPAID, PAID, OVERDUE
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (requester_league_id) REFERENCES "Leagues"(league_id),
   FOREIGN KEY (requester_team_id) REFERENCES "Teams"(team_id),
   FOREIGN KEY (payer_team_id) REFERENCES "Teams"(team_id),
   FOREIGN KEY (payer_user_id) REFERENCES "Users"(user_id),
-  -- Ensures that a payment has a valid requester and payer
+  -- make sure that a payment has a valid requester and payer for debugging and safety
   CONSTRAINT chk_payment_parties CHECK (
     (requester_league_id IS NOT NULL OR requester_team_id IS NOT NULL) AND
     (payer_team_id IS NOT NULL OR payer_user_id IS NOT NULL)

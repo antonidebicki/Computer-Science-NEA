@@ -4,7 +4,7 @@ import 'auth_service.dart';
 import '../core/exceptions.dart';
 import '../core/constants.dart';
 
-/// HTTP client for all backend API calls with authentication support.
+/// HTTP client for my backend api
 /// 
 /// Automatically handles token refresh when access token is expired.
 class ApiClient {
@@ -119,12 +119,10 @@ class ApiClient {
     }
   }
 
-  /// Refreshes token if expired or expires within 5 minutes.
+  /// just used to refresh token if expires in 5 minutes
   Future<void> _ensureValidToken() async {
-    // Load token from storage if not in memory
     _authToken ??= await _authService.getAccessToken();
 
-    // Check if token needs refresh
     final needsRefresh = await _authService.isAccessTokenExpired();
     if (needsRefresh) {
       final refreshed = await _refreshAccessToken();
@@ -134,8 +132,8 @@ class ApiClient {
     }
   }
 
-  /// Core method that handles all HTTP requests with automatic retry on 401.
-  /// Eliminates code duplication across GET, POST, PUT, DELETE methods.
+  /// A core method that handles all HTTP requests with an automatic retry on the error code 401
+  /// eliminates the code duplication across GET, POST, PUT, DELETE methods for my convenience.
   Future<dynamic> _makeRequest(
     String method,
     String endpoint, {
@@ -167,7 +165,6 @@ class ApiClient {
     }
   }
 
-  /// Executes the actual HTTP request based on method type.
   Future<http.Response> _executeRequest(
     String method,
     String endpoint,
@@ -195,7 +192,6 @@ class ApiClient {
   }
 
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
-    // Skip token check for auth endpoints
     final skipToken = endpoint.startsWith('/api/login') || 
                       endpoint.startsWith('/api/auth/register');
     return _makeRequest('POST', endpoint, body: body, skipTokenCheck: skipToken);

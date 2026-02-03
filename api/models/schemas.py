@@ -106,6 +106,39 @@ class TeamJoinRequest(BaseModel):
   is_libero: bool = False
 
 
+class CreateTeamInvitationRequest(BaseModel):
+  """Request to create a team invitation using a player's invitation code (admin action)."""
+  team_id: int
+  invitation_code: str = Field(..., min_length=6, max_length=6)
+  player_number: Optional[int] = None
+  is_libero: bool = False
+
+
+class TeamJoinRequestOut(BaseModel):
+  """A team join request with full details."""
+  join_request_id: int
+  team_id: int
+  user_id: int
+  invited_by_user_id: int
+  invitation_code: str
+  status: str  # PENDING, ACCEPTED, REJECTED
+  player_number: Optional[int] = None
+  is_libero: bool
+  created_at: datetime
+  responded_at: Optional[datetime] = None
+  # Additional fields for display
+  team_name: Optional[str] = None
+  invited_by_username: Optional[str] = None
+  username: Optional[str] = None
+
+
+class RespondToJoinRequestRequest(BaseModel):
+  """Request to accept or reject a team invitation (player action)."""
+  accept: bool
+  player_number: Optional[int] = None
+  is_libero: bool = False
+
+
 class LeagueOut(BaseModel):
     league_id: int
     name: str

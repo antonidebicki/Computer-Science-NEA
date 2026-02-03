@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import '../../../design/index.dart';
+import '../../design/index.dart';
 
 /// reusable table header for standings tables
 class StandingsTableHeader extends StatelessWidget {
