@@ -1,97 +1,8 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
 import '../../../design/index.dart';
-
-/// liquid glass box for a single digit
-class InvitationCodeDigitBox extends StatefulWidget {
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final FocusNode? nextFocusNode;
-  final FocusNode? previousFocusNode;
-  final VoidCallback? onChanged;
-
-  const InvitationCodeDigitBox({
-    super.key,
-    required this.controller,
-    required this.focusNode,
-    this.nextFocusNode,
-    this.previousFocusNode,
-    this.onChanged,
-  });
-
-  @override
-  State<InvitationCodeDigitBox> createState() => _InvitationCodeDigitBoxState();
-}
-
-class _InvitationCodeDigitBoxState extends State<InvitationCodeDigitBox> {
-  bool _hasText = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _hasText = widget.controller.text.isNotEmpty;
-    widget.controller.addListener(_onTextChanged);
-  }
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_onTextChanged);
-    super.dispose();
-  }
-
-  void _onTextChanged() {
-    setState(() {
-      _hasText = widget.controller.text.isNotEmpty;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 1,
-      child: AppGlassContainer(
-        padding: const EdgeInsets.all(Spacing.sm),
-        borderRadius: 12,
-        child: Center(
-          child: CupertinoTextField(
-            controller: widget.controller,
-            focusNode: widget.focusNode,
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(1),
-            ],
-            maxLength: 1,
-            onChanged: (value) {
-              if (value.length == 1) {
-                widget.onChanged?.call();
-                widget.nextFocusNode?.requestFocus();
-              }
-              widget.onChanged?.call();
-            },
-            onSubmitted: (_) {
-              widget.nextFocusNode?.requestFocus();
-            },
-            decoration: const BoxDecoration(),
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            prefix: _hasText ? const SizedBox(width: 4.5) : null,
-            style: AppTypography.headline.copyWith(fontSize: 24),
-            placeholder: '0',
-            placeholderStyle: TextStyle(
-              color: CupertinoColors.placeholderText.resolveFrom(context),
-              fontSize: 24,
-            ),
-            cursorColor: CupertinoColors.activeBlue,
-            cursorHeight: 28,
-            cursorWidth: 3,
-            cursorRadius: const Radius.circular(2),
-          ),
-        ),
-      ),
-    );
-  }
-}
+import 'error_notification_widget.dart';
+import 'invitation_code_digit_box.dart';
 
 class InvitationInputWidget extends StatefulWidget {
   final int teamId;
@@ -111,6 +22,9 @@ class _InvitationInputWidgetState extends State<InvitationInputWidget> {
   late List<TextEditingController> _digitControllers;
   late List<FocusNode> _focusNodes;
   bool _isLoading = false;
+  // dont remove the field for some reason the error message shows its unused but its necessary
+  //vs code is js bugged
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -141,19 +55,70 @@ class _InvitationInputWidgetState extends State<InvitationInputWidget> {
     return _digitControllers.map((c) => c.text).join();
   }
 
-  void _handleSendInvitation() {
+  void _showError(String title, String message) {
+    setState(() => _errorMessage = message);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: ErrorNotificationWidget(
+          title: title,
+          message: message,
+          onDismiss: () {
+            setState(() => _errorMessage = null);
+          },
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// make user friendly. i should change these to allow for more exceptions later but good enough for 50h nea
+  String _parseErrorMessage(dynamic error) {
+    final errorString = error.toString();
+
+    if (errorString.contains('Invalid or expired invitation code')) {
+      return 'This invitation code is invalid or has expired, please check the code and try again.';
+    }
+
+    if (errorString.contains('already') || errorString.contains('already in team')) {
+      return 'This player is already part of this team.';
+    }
+
+    if (errorString.contains('not found')) {
+      return 'Invitation code not found. Please check and try again.';
+    }
+
+    return 'Something went wrong. Please try again.';
+  }
+
+  Future<void> _handleSendInvitation() async {
     final code = _getInvitationCode();
 
     if (code.length != 6 || !RegExp(r'^[0-9]{6}$').hasMatch(code)) {
-      _showErrorDialog('Invalid Code', 'Please enter a valid 6-digit code');
+      _showError(
+        'Incomplete Code',
+        'Please enter all 6 digits before submitting',
+      );
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      widget.onSendInvitation(code);
-      _clearAllDigits();
+      await widget.onSendInvitation(code);
+      if (mounted) {
+        _clearAllDigits();
+      }
+    } catch (error) {
+      if (mounted) {
+        final userFriendlyMessage = _parseErrorMessage(error);
+        _showError(
+          'Invitation Failed',
+          userFriendlyMessage,
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -166,22 +131,6 @@ class _InvitationInputWidgetState extends State<InvitationInputWidget> {
       controller.clear();
     }
     _focusNodes[0].requestFocus();
-  }
-
-  void _showErrorDialog(String title, String message) {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override

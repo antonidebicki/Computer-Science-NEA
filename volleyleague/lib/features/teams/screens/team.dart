@@ -13,7 +13,7 @@ import '../../../services/api_client.dart';
 import '../../../core/models/invitation.dart';
 import '../widgets/invitation_input_widget.dart';
 import '../widgets/pending_invitations_widget.dart';
-
+import '../widgets/players_list.dart';
 
 class TeamScreen extends StatefulWidget {
   const TeamScreen({super.key});
@@ -37,7 +37,6 @@ class _TeamScreenState extends State<TeamScreen> {
   Future<void> _loadPendingInvitations() async {
     setState(() => _isLoadingInvitations = true);
     try {
-      // Get the current user's team ID from context
       final authState = context.read<AuthCubit>().state;
       if (authState is! AuthAuthenticated) {
         _showErrorMessage('Authentication required');
@@ -66,7 +65,6 @@ class _TeamScreenState extends State<TeamScreen> {
         return;
       }
 
-      // Get the coach's team ID from TeamDataCubit
       final teamDataState = context.read<TeamDataCubit>().state;
       if (teamDataState is! TeamDataLoaded ||
           teamDataState.coachedPlayers.isEmpty) {
@@ -74,8 +72,8 @@ class _TeamScreenState extends State<TeamScreen> {
         return;
       }
 
-      // Get the first coached player's team ID
-      // All coached players belong to the coach's team(s)
+
+      //need this for the players widget to work
       final teamId = teamDataState.coachedPlayers.first.teamId;
 
       final request = CreateTeamInvitationRequest(
@@ -93,7 +91,8 @@ class _TeamScreenState extends State<TeamScreen> {
 
       _showSuccessMessage('Invitation sent successfully!');
     } catch (e) {
-      _showErrorMessage('Failed to send invitation: ${e.toString()}');
+      final parsedError = _parseErrorMessage(e.toString());
+      _showErrorMessage(parsedError);
     }
   }
 
@@ -116,6 +115,23 @@ class _TeamScreenState extends State<TeamScreen> {
   void _showErrorMessage(String message) {
     setState(() => _errorMessage = message);
     HapticFeedback.vibrate();
+  }
+  //parsing error messages - replaces the database errors as apiinuknown eerors are ugly and not easy to understand
+  //also helps me in debugging
+  String _parseErrorMessage(String errorString) {
+    if (errorString.contains('Invalid or expired invitation code')) {
+      return 'This invitation code is invalid or has expired. Please check the code and try again.';
+    }
+    if (errorString.contains('already') || errorString.contains('already in team')) {
+      return 'This player is already part of the team.';
+    }
+    if (errorString.contains('not found')) {
+      return 'Invitation code not found. Please check and try again.';
+    }
+    if (errorString.contains('Failed to send invitation:')) {
+      return errorString.replaceFirst('Failed to send invitation: ', '').replaceFirst('ApiException(unknown): ', '');
+    }
+    return errorString.replaceFirst('ApiException(unknown): ', '').replaceFirst('Failed to send invitation: ', '');
   }
 
   void _showSuccessMessage(String message) {
@@ -184,7 +200,15 @@ class _TeamScreenState extends State<TeamScreen> {
               ),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  // Error message
+                  BlocBuilder<TeamDataCubit, TeamDataState>(
+                    builder: (context, state) {
+                      if (state is TeamDataLoaded) {
+                        return PlayersList(players: state.coachedPlayers);
+                      }
+                      return PlayersList(players: const []);
+                    },
+                  ),
+                  const SizedBox(height: Spacing.lg),
                   if (_errorMessage != null)
                     Container(
                       padding: const EdgeInsets.all(Spacing.md),

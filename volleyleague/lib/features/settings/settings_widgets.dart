@@ -278,7 +278,7 @@ class SettingsWidgets {
           children: [
             const SizedBox(height: 16),
             Text(
-              'Version: 0.7.0',
+              'Version: 0.7.0', // only bc the project is about 70% finished 
               style: AppTypography.callout.copyWith(
                 color: CupertinoColors.label,
               ),

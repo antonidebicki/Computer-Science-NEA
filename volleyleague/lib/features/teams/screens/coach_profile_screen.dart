@@ -1,17 +1,40 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../settings/settings_widgets.dart';
+import 'package:provider/provider.dart';
 import '../../../design/index.dart';
 import '../../../state/cubits/auth/auth_cubit.dart';
 import '../../../state/cubits/auth/auth_state.dart';
 import '../../../state/providers/theme_provider.dart';
+import '../../../design/widgets/logout_button.dart';
 
-class CoachProfileScreen extends StatelessWidget {
+// the exact same as the player profile but without the team requests
+// i need to find more to add here
+class CoachProfileScreen extends StatefulWidget {
   const CoachProfileScreen({super.key});
 
   @override
+  State<CoachProfileScreen> createState() => _CoachProfileScreenState();
+}
+
+class _CoachProfileScreenState extends State<CoachProfileScreen> {
+  @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDark;
+    final authState = context.read<AuthCubit>().state;
+
+    String userName = "coach";
+    String userEmail = '';
+
+    if (authState is AuthAuthenticated) {
+      //for some reason full name doesnt always show
+      userName = authState.user.fullName?.isNotEmpty == true
+          ? authState.user.fullName!
+          : authState.user.username;
+      userEmail = authState.user.email.isNotEmpty == true
+          ? authState.user.email
+          : '';
+    }
 
     return CupertinoPageScaffold(
       child: Container(
@@ -20,11 +43,7 @@ class CoachProfileScreen extends StatelessWidget {
         ),
         child: CustomScrollView(
           slivers: [
-            CupertinoSliverRefreshControl(
-              onRefresh: () async {
-                // Refresh profile data if needed
-              },
-            ),
+            CupertinoSliverRefreshControl(onRefresh: () async {}),
             CupertinoSliverNavigationBar(
               heroTag: 'profile_nav_bar',
               largeTitle: const Text('Profile'),
@@ -32,104 +51,105 @@ class CoachProfileScreen extends StatelessWidget {
               backgroundColor: Colors.transparent,
               border: null,
             ),
-            BlocBuilder<AuthCubit, AuthState>(
-              builder: (context, state) {
-                if (state is AuthAuthenticated) {
-                  return SliverPadding(
-                    padding: const EdgeInsets.only(
-                      left: Spacing.lg,
-                      right: Spacing.lg,
-                      top: Spacing.lg,
-                      bottom: 100,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        AppGlassContainer(
-                          padding: const EdgeInsets.all(Spacing.lg),
-                          borderRadius: 20,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Profile Information',
-                                style: AppTypography.headline,
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Spacing.lg,
+                vertical: Spacing.lg,
+              ),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  AppGlassContainer(
+                    padding: const EdgeInsets.all(Spacing.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: CupertinoColors.activeBlue.withValues(
+                                  alpha: 0.2,
+                                ),
                               ),
-                              const SizedBox(height: Spacing.lg),
-                              _ProfileField(
-                                label: 'Username',
-                                value: state.user.username,
+                              child: Center(
+                                child: AppIcons.profile(
+                                  fontSize: 32,
+                                  color: CupertinoColors.activeBlue,
+                                ),
                               ),
-                              const SizedBox(height: Spacing.md),
-                              _ProfileField(
-                                label: 'Email',
-                                value: state.user.email,
+                            ),
+                            const SizedBox(width: Spacing.lg),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    userName,
+                                    style: AppTypography.headline.copyWith(
+                                      color: CupertinoColors.label,
+                                    ),
+                                  ),
+                                  if (userEmail.isNotEmpty) ...[
+                                    const SizedBox(height: Spacing.xs),
+                                    Text(
+                                      userEmail,
+                                      style: AppTypography.callout.copyWith(
+                                        color: CupertinoColors.secondaryLabel,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ],
                               ),
-                              const SizedBox(height: Spacing.md),
-                              _ProfileField(
-                                label: 'User ID',
-                                value: state.user.userId.toString(),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: Spacing.lg),
-                        CupertinoButton(
-                          onPressed: () {
-                            context.read<AuthCubit>().logout();
-                          },
-                          child: const Text(
-                            'Logout',
-                            style:
-                                TextStyle(color: CupertinoColors.systemRed),
-                          ),
-                        ),
-                        const SizedBox(height: Spacing.xxxl),
-                      ]),
+                      ],
                     ),
-                  );
-                }
-
-                return const SliverFillRemaining(
-                  child: Center(
-                    child: Text('Not authenticated'),
                   ),
-                );
-              },
+                  const SizedBox(height: Spacing.lg),
+
+                  Text(
+                    'Settings',
+                    style: AppTypography.headline.copyWith(
+                      color: CupertinoColors.label,
+                    ),
+                  ),
+                  const SizedBox(height: Spacing.md),
+
+                  SettingsWidgets.buildSettingCard(
+                    icon: CupertinoIcons.info_circle,
+                    title: 'About',
+                    subtitle: 'App version and information',
+                    isDark: isDark,
+                    onTap: () => SettingsWidgets.showAboutDialog(context),
+                  ),
+                  const SizedBox(height: Spacing.lg),
+
+                  Text(
+                    'Account',
+                    style: AppTypography.headline.copyWith(
+                      color: CupertinoColors.label,
+                    ),
+                  ),
+                  SizedBox(height: Spacing.md),
+                  LogoutButton(
+                    onPressed: () => SettingsWidgets.showLogoutConfirmation(
+                      context,
+                      () => context.read<AuthCubit>().logout(),
+                    ),
+                  ),
+                  const SizedBox(height: Spacing.xxxl * 3),
+                ]),
+              ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ProfileField extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _ProfileField({
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTypography.caption.copyWith(
-            color: CupertinoColors.secondaryLabel.resolveFrom(context),
-          ),
-        ),
-        const SizedBox(height: Spacing.xs),
-        Text(
-          value,
-          style: AppTypography.body,
-        ),
-      ],
     );
   }
 }
