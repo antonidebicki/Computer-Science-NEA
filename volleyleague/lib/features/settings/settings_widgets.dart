@@ -68,11 +68,13 @@ class SettingsWidgets {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        displayCode,
-                        style: AppTypography.headline.copyWith(
-                          color: CupertinoColors.activeBlue,
-                          letterSpacing: 1.5,
+                      Center(
+                        child: Text(
+                          displayCode,
+                          style: AppTypography.headline.copyWith(
+                            color: CupertinoColors.activeBlue,
+                            letterSpacing: 1.5,
+                          ),
                         ),
                       ),
                       CupertinoButton(
@@ -101,9 +103,7 @@ class SettingsWidgets {
                             return;
                           }
 
-                          await Clipboard.setData(
-                            ClipboardData(text: code),
-                          );
+                          await Clipboard.setData(ClipboardData(text: code));
 
                           final data = await Clipboard.getData(
                             Clipboard.kTextPlain,
@@ -278,7 +278,7 @@ class SettingsWidgets {
           children: [
             const SizedBox(height: 16),
             Text(
-              'Version: 0.7.0', // only bc the project is about 70% finished 
+              'Version: 0.7.0', // only bc the project is about 70% finished
               style: AppTypography.callout.copyWith(
                 color: CupertinoColors.label,
               ),

@@ -63,10 +63,15 @@ class MiniFixturesWidget extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: Spacing.xs),
-                  const Icon(
-                    CupertinoIcons.arrow_right,
-                    size: 16,
-                    color: CupertinoColors.activeBlue,
+                  Transform.translate(
+                    offset: const Offset(0, -1.5),
+                    child: Text(
+                      '›',
+                      style: AppTypography.callout.copyWith(
+                        fontSize: AppTypography.callout.fontSize! * 1.5,
+                        color: CupertinoColors.activeBlue,
+                      ),
+                    ),
                   ),
                 ],
               ),

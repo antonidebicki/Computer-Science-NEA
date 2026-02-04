@@ -71,31 +71,28 @@ class MiniStandingsWidget extends StatelessWidget {
             CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: onViewFullTable,
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '+ ${standings.length - 5} more teams ',
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '+ ${standings.length - 5} more teams',
+                    style: AppTypography.callout.copyWith(
+                      color: CupertinoColors.activeBlue,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: Spacing.xs),
+                  Transform.translate(
+                    offset: const Offset(0, -1.5),
+                    child: Text(
+                      '›',
                       style: AppTypography.callout.copyWith(
+                        fontSize: AppTypography.callout.fontSize! * 1.5,
                         color: CupertinoColors.activeBlue,
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    WidgetSpan(
-                      alignment: PlaceholderAlignment.middle,
-                      child: Transform.translate(
-                        offset: Offset(0, -1.5), // makes the arrow look inline (mostly)
-                        child: Text(
-                          '›',
-                          style: AppTypography.callout.copyWith(
-                            fontSize: AppTypography.callout.fontSize! * 1.5,
-                            color: CupertinoColors.activeBlue,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],

@@ -61,6 +61,12 @@ class _PlayerHomeScreenContentState extends State<_PlayerHomeScreenContent> {
     NavBarItem(icon: AppIcons.profile, label: 'Profile'),
   ];
 
+  void changeTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -200,19 +206,22 @@ class _HomeTab extends StatelessWidget {
                             leagueName: state.leagueStandings.first.league.name,
                             standings: state.leagueStandings.first.standings,
                             onViewFullTable: () {
-                              debugPrint('View full table tapped');
+                              // Use the parent state to change the navigation index
+                              final homeState = context.findAncestorStateOfType<_PlayerHomeScreenContentState>();
+                              homeState?.changeTab(2); // 2 is the Standings tab index
                             },
                           )
                         else
                           const NoLeagueWidget(),
 
                         const SizedBox(height: Spacing.lg),
-                        // TODO: look below
                         // upcoming fixtures. need to look into the algorithm for this bc not sure if it works as intended
                         MiniFixturesWidget(
                           fixtures: state.upcomingFixtures,
                           onMoreFixtures: () {
-                            debugPrint('More fixtures tapped');
+                            // Use the parent state to change the navigation index
+                            final homeState = context.findAncestorStateOfType<_PlayerHomeScreenContentState>();
+                            homeState?.changeTab(1); // 1 is the Fixtures tab index
                           },
                         ),
                         SizedBox(height: Spacing.xxxl),
