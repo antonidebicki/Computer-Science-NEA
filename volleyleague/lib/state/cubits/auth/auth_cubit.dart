@@ -64,7 +64,7 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> checkAuthStatus() async {
-    // Don't emit loading on startup - check silently
+    // check this silently just for abstraction awau from user
     try {
       final isLoggedIn = await _userRepository.isLoggedIn();
       

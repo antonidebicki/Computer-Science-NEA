@@ -1,8 +1,19 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, Request, status, Depends
 from asyncpg.exceptions import UniqueViolationError
-from api.models import LeagueOut, LeagueCreate, SeasonOut, SeasonCreate, LeagueTeamOut
+from api.models import (
+    LeagueOut,
+    LeagueCreate,
+    SeasonOut,
+    SeasonCreate,
+    LeagueTeamOut,
+    CreateLeagueInvitationRequest,
+    LeagueJoinRequestOut,
+    RespondToLeagueInvitationRequest,
+)
 from api.auth import AuthUtils
+from api.services.standings_engine import initialise_season_standings
+from api.services.team_invitation_code_engine import TeamInvitationCodeEngine
 
 router = APIRouter()
 
@@ -272,4 +283,318 @@ async def remove_team_from_season(
             'DELETE FROM "SeasonTeams" WHERE season_id = $1 AND team_id = $2',
             season_id,
             team_id,
+        )
+
+
+# ==================== LEAGUE INVITATION ENDPOINTS ====================
+
+@router.post("/leagues/invitations", response_model=LeagueJoinRequestOut, status_code=status.HTTP_201_CREATED)
+async def create_league_invitation(
+    request: Request,
+    payload: CreateLeagueInvitationRequest,
+    user: dict = Depends(AuthUtils.require_role(["ADMIN"]))
+) -> LeagueJoinRequestOut:
+    """
+    Create a league invitation for a team (ADMIN action).
+
+    Flow:
+    1. League admin selects league + season + team
+    2. Invitation is created with PENDING status
+    3. Team admin/coach can accept or reject
+    4. If accepted, team is added to SeasonTeams
+    """
+    pool = request.app.state.pool
+    admin_user_id = user.get("user_id")
+
+    async with pool.acquire() as connection:
+        # Verify league exists and admin owns it (or user is ADMIN)
+        league = await connection.fetchrow(
+            'SELECT league_id, name, admin_user_id FROM "Leagues" WHERE league_id = $1;',
+            payload.league_id,
+        )
+        if not league:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="League not found")
+
+        if league["admin_user_id"] != admin_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to invite teams to this league"
+            )
+
+        # Verify season exists, belongs to league, and not archived
+        season = await connection.fetchrow(
+            'SELECT season_id, name, league_id, is_archived FROM "Seasons" WHERE season_id = $1;',
+            payload.season_id,
+        )
+        if not season or season["league_id"] != payload.league_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found for this league")
+
+        if season["is_archived"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot invite teams to an archived season"
+            )
+
+        # Validate invitation code to find team
+        teams_rows = await connection.fetch(
+            'SELECT team_id, name FROM "Teams" ORDER BY team_id;'
+        )
+
+        team = None
+        for row in teams_rows:
+            test_team_id = row["team_id"]
+            if TeamInvitationCodeEngine.validate_code(test_team_id, payload.invitation_code):
+                team = row
+                break
+
+        if team is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired team invitation code"
+            )
+
+        # Check if team already in season
+        existing_team = await connection.fetchrow(
+            'SELECT season_id FROM "SeasonTeams" WHERE season_id = $1 AND team_id = $2;',
+            payload.season_id,
+            team["team_id"],
+        )
+        if existing_team:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Team is already in this season"
+            )
+
+        # Check for existing pending invitation
+        existing_invitation = await connection.fetchrow(
+            '''SELECT join_request_id FROM "LeagueJoinRequests"
+               WHERE season_id = $1 AND team_id = $2 AND status = 'PENDING';''',
+            payload.season_id,
+            team["team_id"],
+        )
+        if existing_invitation:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Team already has a pending invitation for this season"
+            )
+
+        # Create invitation
+        row = await connection.fetchrow(
+            '''
+            INSERT INTO "LeagueJoinRequests"
+            (league_id, season_id, team_id, invited_by_user_id, status)
+            VALUES ($1, $2, $3, $4, 'PENDING')
+            RETURNING join_request_id, league_id, season_id, team_id, invited_by_user_id,
+                      status, created_at, responded_at;
+            ''',
+            payload.league_id,
+            payload.season_id,
+            team["team_id"],
+            admin_user_id,
+        )
+
+        result = dict(row)
+        result["league_name"] = league["name"]
+        result["season_name"] = season["name"]
+        result["team_name"] = team["name"]
+        result["invited_by_username"] = user.get("username")
+
+        return LeagueJoinRequestOut(**result)
+
+
+@router.get("/leagues/invitations/sent", response_model=dict)
+async def get_sent_league_invitations(
+    request: Request,
+    league_id: int = None,
+    season_id: int = None,
+    user: dict = Depends(AuthUtils.require_role(["ADMIN"]))
+) -> dict:
+    """Get invitations sent by the current league admin."""
+    pool = request.app.state.pool
+    admin_user_id = user.get("user_id")
+
+    async with pool.acquire() as connection:
+        query = '''
+            SELECT ljr.join_request_id, ljr.league_id, ljr.season_id, ljr.team_id,
+                   ljr.invited_by_user_id, ljr.status, ljr.created_at, ljr.responded_at,
+                   l.name as league_name, s.name as season_name, t.name as team_name,
+                   u.username as invited_by_username
+            FROM "LeagueJoinRequests" ljr
+            JOIN "Leagues" l ON ljr.league_id = l.league_id
+            JOIN "Seasons" s ON ljr.season_id = s.season_id
+            JOIN "Teams" t ON ljr.team_id = t.team_id
+            JOIN "Users" u ON ljr.invited_by_user_id = u.user_id
+            WHERE ljr.invited_by_user_id = $1
+        '''
+        params = [admin_user_id]
+
+        if league_id is not None:
+            query += " AND ljr.league_id = $2"
+            params.append(league_id)
+            if season_id is not None:
+                query += " AND ljr.season_id = $3"
+                params.append(season_id)
+        elif season_id is not None:
+            query += " AND ljr.season_id = $2"
+            params.append(season_id)
+
+        query += " ORDER BY ljr.created_at DESC;"
+
+        rows = await connection.fetch(query, *params)
+
+    invitations = [LeagueJoinRequestOut(**row) for row in rows]
+    return {"invitations": invitations}
+
+
+@router.get("/leagues/invitations/received", response_model=dict)
+async def get_received_league_invitations(
+    request: Request,
+    user: dict = Depends(AuthUtils.require_role(["COACH", "ADMIN"]))
+) -> dict:
+    """Get invitations received by teams owned by the current user."""
+    pool = request.app.state.pool
+    current_user_id = user.get("user_id")
+
+    async with pool.acquire() as connection:
+        rows = await connection.fetch(
+            '''
+            SELECT ljr.join_request_id, ljr.league_id, ljr.season_id, ljr.team_id,
+                   ljr.invited_by_user_id, ljr.status, ljr.created_at, ljr.responded_at,
+                   l.name as league_name, s.name as season_name, t.name as team_name,
+                   u.username as invited_by_username
+            FROM "LeagueJoinRequests" ljr
+            JOIN "Leagues" l ON ljr.league_id = l.league_id
+            JOIN "Seasons" s ON ljr.season_id = s.season_id
+            JOIN "Teams" t ON ljr.team_id = t.team_id
+            JOIN "Users" u ON ljr.invited_by_user_id = u.user_id
+            WHERE t.created_by_user_id = $1
+            ORDER BY ljr.created_at DESC;
+            ''',
+            current_user_id,
+        )
+
+    invitations = [LeagueJoinRequestOut(**row) for row in rows]
+    return {"invitations": invitations}
+
+
+@router.post("/leagues/invitations/{join_request_id}/respond", response_model=LeagueJoinRequestOut)
+async def respond_to_league_invitation(
+    request: Request,
+    join_request_id: int,
+    payload: RespondToLeagueInvitationRequest,
+    user: dict = Depends(AuthUtils.require_role(["COACH", "ADMIN"]))
+) -> LeagueJoinRequestOut:
+    """Accept or reject a league invitation (team admin/coach action)."""
+    pool = request.app.state.pool
+    current_user_id = user.get("user_id")
+
+    async with pool.acquire() as connection:
+        invitation = await connection.fetchrow(
+            '''
+            SELECT ljr.*, l.name as league_name, s.name as season_name, t.name as team_name,
+                   t.created_by_user_id, s.is_archived, u.username as invited_by_username
+            FROM "LeagueJoinRequests" ljr
+            JOIN "Leagues" l ON ljr.league_id = l.league_id
+            JOIN "Seasons" s ON ljr.season_id = s.season_id
+            JOIN "Teams" t ON ljr.team_id = t.team_id
+            JOIN "Users" u ON ljr.invited_by_user_id = u.user_id
+            WHERE ljr.join_request_id = $1;
+            ''',
+            join_request_id,
+        )
+        if not invitation:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not found")
+
+        if invitation["created_by_user_id"] != current_user_id and user.get("role") != "ADMIN":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to respond to this invitation"
+            )
+
+        if invitation["status"] != "PENDING":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invitation has already been responded to"
+            )
+
+        if invitation["is_archived"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot join an archived season"
+            )
+
+        if payload.accept:
+            # Add team to season
+            try:
+                await connection.execute(
+                    '''
+                    INSERT INTO "SeasonTeams" (season_id, team_id, join_date)
+                    VALUES ($1, $2, CURRENT_DATE);
+                    ''',
+                    invitation["season_id"],
+                    invitation["team_id"],
+                )
+                await initialise_season_standings(connection, invitation["season_id"])
+            except UniqueViolationError:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Team is already in this season"
+                )
+
+        # Update invitation status
+        updated = await connection.fetchrow(
+            '''
+            UPDATE "LeagueJoinRequests"
+            SET status = $1, responded_at = CURRENT_TIMESTAMP
+            WHERE join_request_id = $2
+            RETURNING join_request_id, league_id, season_id, team_id, invited_by_user_id,
+                      status, created_at, responded_at;
+            ''',
+            "ACCEPTED" if payload.accept else "REJECTED",
+            join_request_id,
+        )
+
+        result = dict(updated)
+        result["league_name"] = invitation["league_name"]
+        result["season_name"] = invitation["season_name"]
+        result["team_name"] = invitation["team_name"]
+        result["invited_by_username"] = invitation["invited_by_username"]
+
+        return LeagueJoinRequestOut(**result)
+
+
+@router.delete("/leagues/invitations/{join_request_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_league_invitation(
+    request: Request,
+    join_request_id: int,
+    user: dict = Depends(AuthUtils.require_role(["COACH", "ADMIN"]))
+):
+    """Cancel or delete a league invitation (admin or team owner)."""
+    pool = request.app.state.pool
+    current_user_id = user.get("user_id")
+
+    async with pool.acquire() as connection:
+        invitation = await connection.fetchrow(
+            '''
+            SELECT ljr.join_request_id, ljr.invited_by_user_id, t.created_by_user_id
+            FROM "LeagueJoinRequests" ljr
+            JOIN "Teams" t ON ljr.team_id = t.team_id
+            WHERE ljr.join_request_id = $1;
+            ''',
+            join_request_id,
+        )
+        if not invitation:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not found")
+
+        if (invitation["invited_by_user_id"] != current_user_id and
+                invitation["created_by_user_id"] != current_user_id and
+                user.get("role") != "ADMIN"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to delete this invitation"
+            )
+
+        await connection.execute(
+            'DELETE FROM "LeagueJoinRequests" WHERE join_request_id = $1;',
+            join_request_id,
         )

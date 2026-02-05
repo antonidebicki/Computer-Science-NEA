@@ -1,4 +1,5 @@
 from typing import List
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, Request, status, Depends
 from asyncpg.exceptions import UniqueViolationError
 from api.models import (
@@ -9,9 +10,11 @@ from api.models import (
     CreateTeamInvitationRequest,
     TeamJoinRequestOut,
     RespondToJoinRequestRequest,
+    TeamInvitationCodeResponse,
 )
 from api.auth import AuthUtils
 from api.services.invitation_code_engine import InvitationCodeEngine
+from api.services.team_invitation_code_engine import TeamInvitationCodeEngine
 
 router = APIRouter()
 
@@ -294,6 +297,36 @@ async def remove_team_member(
 
 # ==================== TEAM INVITATION ENDPOINTS ====================
 
+@router.get("/teams/invitation-code/generate", response_model=TeamInvitationCodeResponse)
+async def get_team_invitation_code(
+    request: Request,
+    team_id: int,
+    user: dict = Depends(AuthUtils.require_role(["COACH", "ADMIN"]))
+) -> TeamInvitationCodeResponse:
+    """Generate today's invitation code for a team (coach/admin)."""
+    pool = request.app.state.pool
+    current_user_id = user.get("user_id")
+
+    async with pool.acquire() as connection:
+        team = await connection.fetchrow(
+            'SELECT team_id, created_by_user_id FROM "Teams" WHERE team_id = $1;',
+            team_id,
+        )
+        if not team:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+
+        if team["created_by_user_id"] != current_user_id and user.get("role") != "ADMIN":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to generate this team's invitation code",
+            )
+
+    code = TeamInvitationCodeEngine.generate_code(team_id)
+    return TeamInvitationCodeResponse(
+        team_id=team_id,
+        invitation_code=code,
+        code_generated_date=datetime.utcnow().strftime("%Y-%m-%d"),
+    )
 @router.post("/teams/invitations", response_model=TeamJoinRequestOut, status_code=status.HTTP_201_CREATED)
 async def create_team_invitation(
     request: Request,

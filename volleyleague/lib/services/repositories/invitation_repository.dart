@@ -13,6 +13,14 @@ class InvitationRepository {
     return InvitationCode.fromJson(response);
   }
 
+  /// Generate today's invitation code for a team (coach/admin action)
+  Future<TeamInvitationCode> generateTeamInvitationCode(int teamId) async {
+    final response = await _apiClient.get(
+      '/api/teams/invitation-code/generate?team_id=$teamId',
+    );
+    return TeamInvitationCode.fromJson(response);
+  }
+
   /// Redeem an invitation code (legacy - creates connection between users)
   /// Note: This is the old flow that just logs the invitation redemption
   Future<InvitationRedeemResponse> redeemInvitationCode(
@@ -78,5 +86,59 @@ class InvitationRepository {
   /// Admin can cancel sent invitations, player can decline pending invitations
   Future<void> deleteInvitation(int joinRequestId) async {
     await _apiClient.delete('/api/teams/invitations/$joinRequestId');
+  }
+
+  /// Create a league invitation for a team (ADMIN action)
+  Future<LeagueJoinRequest> createLeagueInvitation(
+      CreateLeagueInvitationRequest request) async {
+    final response = await _apiClient.post(
+      '/api/leagues/invitations',
+      request.toJson(),
+    );
+    return LeagueJoinRequest.fromJson(response);
+  }
+
+  /// Get league invitations sent by the current admin
+  Future<List<LeagueJoinRequest>> getSentLeagueInvitations({
+    int? leagueId,
+    int? seasonId,
+  }) async {
+    final queryParams = <String>[];
+    if (leagueId != null) queryParams.add('league_id=$leagueId');
+    if (seasonId != null) queryParams.add('season_id=$seasonId');
+    final queryString = queryParams.isNotEmpty ? '?${queryParams.join('&')}' : '';
+
+    final response =
+        await _apiClient.get('/api/leagues/invitations/sent$queryString');
+    final List<dynamic> requestsList = response['invitations'] as List<dynamic>;
+    return requestsList
+        .map((json) => LeagueJoinRequest.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Get league invitations received by teams owned by current user
+  Future<List<LeagueJoinRequest>> getReceivedLeagueInvitations() async {
+    final response = await _apiClient.get('/api/leagues/invitations/received');
+    final List<dynamic> requestsList = response['invitations'] as List<dynamic>;
+    return requestsList
+        .map((json) => LeagueJoinRequest.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Accept or reject a league invitation (team admin/coach action)
+  Future<LeagueJoinRequest> respondToLeagueInvitation({
+    required int joinRequestId,
+    required RespondToLeagueInvitationRequest response,
+  }) async {
+    final responseData = await _apiClient.post(
+      '/api/leagues/invitations/$joinRequestId/respond',
+      response.toJson(),
+    );
+    return LeagueJoinRequest.fromJson(responseData);
+  }
+
+  /// Delete/cancel a league invitation
+  Future<void> deleteLeagueInvitation(int joinRequestId) async {
+    await _apiClient.delete('/api/leagues/invitations/$joinRequestId');
   }
 }

@@ -11,9 +11,11 @@ import '../../../state/providers/theme_provider.dart';
 import '../../../services/repositories/invitation_repository.dart';
 import '../../../services/api_client.dart';
 import '../../../core/models/invitation.dart';
+import '../../settings/settings_widgets.dart';
 import '../widgets/invitation_input_widget.dart';
 import '../widgets/pending_invitations_widget.dart';
 import '../widgets/players_list.dart';
+import '../widgets/league_requests_section.dart';
 
 class TeamScreen extends StatefulWidget {
   const TeamScreen({super.key});
@@ -26,12 +28,46 @@ class _TeamScreenState extends State<TeamScreen> {
   List<TeamJoinRequest> _pendingInvitations = [];
   bool _isLoadingInvitations = false;
   String? _errorMessage;
+  bool _showTeamInvitationCode = false;
+  String? _teamInvitationCode;
+  bool _loadingTeamCode = false;
+  bool _teamCodeLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _invitationRepository = InvitationRepository(ApiClient());
     _loadPendingInvitations();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadTeamInvitationCode();
+    });
+  }
+
+  Future<void> _loadTeamInvitationCode() async {
+    if (_teamCodeLoaded) return;
+    final teamId = _getCoachTeamId();
+    if (teamId == null || teamId == 0) {
+      return;
+    }
+
+    try {
+      setState(() => _loadingTeamCode = true);
+      final code = await _invitationRepository.generateTeamInvitationCode(teamId);
+      if (mounted) {
+        setState(() {
+          _teamInvitationCode = code.invitationCode;
+          _teamCodeLoaded = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorMessage('Failed to load team invitation code: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loadingTeamCode = false);
+      }
+    }
   }
 
   Future<void> _loadPendingInvitations() async {
@@ -177,6 +213,7 @@ class _TeamScreenState extends State<TeamScreen> {
             CupertinoSliverRefreshControl(
               onRefresh: () async {
                 _loadPendingInvitations();
+                _loadTeamInvitationCode();
               },
             ),
             CupertinoSliverNavigationBar(
@@ -187,7 +224,10 @@ class _TeamScreenState extends State<TeamScreen> {
               border: null,
               trailing: CupertinoButton(
                 padding: EdgeInsets.zero,
-                onPressed: _loadPendingInvitations,
+                onPressed: () {
+                  _loadPendingInvitations();
+                  _loadTeamInvitationCode();
+                },
                 child: const Icon(CupertinoIcons.refresh),
               ),
             ),
@@ -203,11 +243,33 @@ class _TeamScreenState extends State<TeamScreen> {
                   BlocBuilder<TeamDataCubit, TeamDataState>(
                     builder: (context, state) {
                       if (state is TeamDataLoaded) {
+                        if (!_teamCodeLoaded) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _loadTeamInvitationCode();
+                          });
+                        }
                         return PlayersList(players: state.coachedPlayers);
                       }
                       return PlayersList(players: const []);
                     },
                   ),
+                  const SizedBox(height: Spacing.lg),
+                  SettingsWidgets.buildInvitationCodeSection(
+                    context: context,
+                    isDark: isDark,
+                    invitationCode: _teamInvitationCode,
+                    showInvitationCode: _showTeamInvitationCode,
+                    loadingCode: _loadingTeamCode,
+                    onToggleShowCode: () {
+                      setState(() {
+                        _showTeamInvitationCode = !_showTeamInvitationCode;
+                      });
+                    },
+                    helperText:
+                        'Share this code with a league admin to invite your team.',
+                  ),
+                  const SizedBox(height: Spacing.lg),
+                  LeagueRequestsSection(isDark: isDark),
                   const SizedBox(height: Spacing.lg),
                   if (_errorMessage != null)
                     Container(

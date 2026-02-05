@@ -35,6 +35,35 @@ class InvitationCode {
   }
 }
 
+
+class TeamInvitationCode {
+  final int teamId;
+  final String invitationCode;
+  final String codeGeneratedDate;
+
+  const TeamInvitationCode({
+    required this.teamId,
+    required this.invitationCode,
+    required this.codeGeneratedDate,
+  });
+
+  factory TeamInvitationCode.fromJson(Map<String, dynamic> json) {
+    return TeamInvitationCode(
+      teamId: json['team_id'] as int,
+      invitationCode: json['invitation_code'] as String,
+      codeGeneratedDate: json['code_generated_date'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'team_id': teamId,
+      'invitation_code': invitationCode,
+      'code_generated_date': codeGeneratedDate,
+    };
+  }
+}
+
 class InvitationRedeemResponse {
   final bool success;
   final String message;
@@ -159,6 +188,74 @@ class TeamJoinRequest {
 }
 
 
+class LeagueJoinRequest {
+  final int joinRequestId;
+  final int leagueId;
+  final int seasonId;
+  final int teamId;
+  final int invitedByUserId;
+  final String status; // 'PENDING', 'ACCEPTED', 'REJECTED'
+  final DateTime createdAt;
+  final DateTime? respondedAt;
+
+  final String? leagueName;
+  final String? seasonName;
+  final String? teamName;
+  final String? invitedByUsername;
+
+  const LeagueJoinRequest({
+    required this.joinRequestId,
+    required this.leagueId,
+    required this.seasonId,
+    required this.teamId,
+    required this.invitedByUserId,
+    required this.status,
+    required this.createdAt,
+    this.respondedAt,
+    this.leagueName,
+    this.seasonName,
+    this.teamName,
+    this.invitedByUsername,
+  });
+
+  factory LeagueJoinRequest.fromJson(Map<String, dynamic> json) {
+    return LeagueJoinRequest(
+      joinRequestId: json['join_request_id'] as int,
+      leagueId: json['league_id'] as int,
+      seasonId: json['season_id'] as int,
+      teamId: json['team_id'] as int,
+      invitedByUserId: json['invited_by_user_id'] as int,
+      status: json['status'] as String,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      respondedAt: json['responded_at'] != null
+          ? DateTime.parse(json['responded_at'] as String)
+          : null,
+      leagueName: json['league_name'] as String?,
+      seasonName: json['season_name'] as String?,
+      teamName: json['team_name'] as String?,
+      invitedByUsername: json['invited_by_username'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'join_request_id': joinRequestId,
+      'league_id': leagueId,
+      'season_id': seasonId,
+      'team_id': teamId,
+      'invited_by_user_id': invitedByUserId,
+      'status': status,
+      'created_at': createdAt.toIso8601String(),
+      'responded_at': respondedAt?.toIso8601String(),
+      'league_name': leagueName,
+      'season_name': seasonName,
+      'team_name': teamName,
+      'invited_by_username': invitedByUsername,
+    };
+  }
+}
+
+
 class CreateTeamInvitationRequest {
   final int teamId;
   final String invitationCode; // Player's invitation code
@@ -198,6 +295,42 @@ class RespondToInvitationRequest {
       'accept': accept,
       'player_number': playerNumber,
       'is_libero': isLibero,
+    };
+  }
+}
+
+
+class CreateLeagueInvitationRequest {
+  final int leagueId;
+  final int seasonId;
+  final String invitationCode;
+
+  const CreateLeagueInvitationRequest({
+    required this.leagueId,
+    required this.seasonId,
+    required this.invitationCode,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'league_id': leagueId,
+      'season_id': seasonId,
+      'invitation_code': invitationCode,
+    };
+  }
+}
+
+
+class RespondToLeagueInvitationRequest {
+  final bool accept;
+
+  const RespondToLeagueInvitationRequest({
+    required this.accept,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'accept': accept,
     };
   }
 }

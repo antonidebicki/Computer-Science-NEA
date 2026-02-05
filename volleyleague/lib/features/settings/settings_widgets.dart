@@ -12,6 +12,7 @@ class SettingsWidgets {
     required bool showInvitationCode,
     required bool loadingCode,
     required VoidCallback onToggleShowCode,
+    String helperText = 'Share this code to your team admin to join a team',
   }) {
     final displayCode = invitationCode ?? 'Loading...';
     return AppGlassContainer(
@@ -145,7 +146,7 @@ class SettingsWidgets {
             ),
             const SizedBox(height: Spacing.md),
             Text(
-              'Share this code to your team admin to join a team',
+              helperText,
               style: AppTypography.callout.copyWith(
                 color: CupertinoColors.secondaryLabel,
               ),

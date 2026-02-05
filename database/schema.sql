@@ -1,5 +1,6 @@
 -- Drop tables in reverse order of dependency.
 DROP TABLE IF EXISTS "Payments" CASCADE;
+DROP TABLE IF EXISTS "InvitationCodes" CASCADE;
 DROP TABLE IF EXISTS "ArchivedStandings" CASCADE;
 DROP TABLE IF EXISTS "LeagueStandings" CASCADE;
 DROP TABLE IF EXISTS "Substitutions" CASCADE;
@@ -8,6 +9,7 @@ DROP TABLE IF EXISTS "Sets" CASCADE;
 DROP TABLE IF EXISTS "MatchReferees" CASCADE;
 DROP TABLE IF EXISTS "Matches" CASCADE;
 DROP TABLE IF EXISTS "SeasonTeams" CASCADE;
+DROP TABLE IF EXISTS "LeagueJoinRequests" CASCADE;
 DROP TABLE IF EXISTS "Seasons" CASCADE;
 DROP TABLE IF EXISTS "TeamMembers" CASCADE;
 DROP TABLE IF EXISTS "TeamJoinRequests" CASCADE;
@@ -108,6 +110,24 @@ CREATE TABLE "SeasonTeams" (
   PRIMARY KEY (season_id, team_id),
   FOREIGN KEY (season_id) REFERENCES "Seasons"(season_id) ON DELETE CASCADE,
   FOREIGN KEY (team_id) REFERENCES "Teams"(team_id) ON DELETE CASCADE
+);
+
+-- League Join Requests: Tracks pending invitations for teams to join leagues (by season)
+CREATE TABLE "LeagueJoinRequests" (
+  join_request_id SERIAL PRIMARY KEY,
+  league_id INT NOT NULL,
+  season_id INT NOT NULL,
+  team_id INT NOT NULL,
+  invited_by_user_id INT NOT NULL, -- The league admin who sent the invitation
+  status join_request_status DEFAULT 'PENDING',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  responded_at TIMESTAMP,
+  FOREIGN KEY (league_id) REFERENCES "Leagues"(league_id) ON DELETE CASCADE,
+  FOREIGN KEY (season_id) REFERENCES "Seasons"(season_id) ON DELETE CASCADE,
+  FOREIGN KEY (team_id) REFERENCES "Teams"(team_id) ON DELETE CASCADE,
+  FOREIGN KEY (invited_by_user_id) REFERENCES "Users"(user_id) ON DELETE CASCADE,
+  -- Ensure a team can only have one pending request per season
+  UNIQUE (season_id, team_id, status)
 );
 
 -- Match, Scoring, and Standings Tables

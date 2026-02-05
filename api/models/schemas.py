@@ -139,6 +139,35 @@ class RespondToJoinRequestRequest(BaseModel):
   is_libero: bool = False
 
 
+class CreateLeagueInvitationRequest(BaseModel):
+    """Request to create a league invitation for a team (admin action)."""
+    league_id: int
+    season_id: int
+    invitation_code: str = Field(..., min_length=6, max_length=6)
+
+
+class LeagueJoinRequestOut(BaseModel):
+    """A league join request with full details."""
+    join_request_id: int
+    league_id: int
+    season_id: int
+    team_id: int
+    invited_by_user_id: int
+    status: str  # PENDING, ACCEPTED, REJECTED
+    created_at: datetime
+    responded_at: Optional[datetime] = None
+    # Additional fields for display
+    league_name: Optional[str] = None
+    season_name: Optional[str] = None
+    team_name: Optional[str] = None
+    invited_by_username: Optional[str] = None
+
+
+class RespondToLeagueInvitationRequest(BaseModel):
+    """Request to accept or reject a league invitation (team admin/coach action)."""
+    accept: bool
+
+
 class LeagueOut(BaseModel):
     league_id: int
     name: str
@@ -295,6 +324,13 @@ class MatchProcessingResult(BaseModel):
 class InvitationCodeResponse(BaseModel):
     """Response containing the user's daily invitation code."""
     user_id: int
+    invitation_code: str
+    code_generated_date: str  # YYYY-MM-DD format
+
+
+class TeamInvitationCodeResponse(BaseModel):
+    """Response containing the team's daily invitation code."""
+    team_id: int
     invitation_code: str
     code_generated_date: str  # YYYY-MM-DD format
 
