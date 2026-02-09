@@ -16,6 +16,7 @@ DROP TABLE IF EXISTS "Leagues" CASCADE;
 DROP TABLE IF EXISTS "Teams" CASCADE;
 DROP TABLE IF EXISTS "Users" CASCADE;
 
+DROP TYPE IF EXISTS game_status CASCADE;
 DROP TYPE IF EXISTS game_states CASCADE;
 DROP TYPE IF EXISTS user_role CASCADE;
 DROP TYPE IF EXISTS join_request_status CASCADE;
@@ -57,7 +58,7 @@ CREATE TABLE "TeamMembers" (
   team_id INT NOT NULL,
   user_id INT NOT NULL,
   role_in_team VARCHAR(100) DEFAULT 'Player',
-  player_number INT CHECK (player_number > 0),
+  player_number INT,
   is_captain BOOLEAN DEFAULT FALSE,
   is_libero BOOLEAN DEFAULT FALSE,
   PRIMARY KEY (team_id, user_id),
@@ -72,7 +73,7 @@ CREATE TABLE "TeamJoinRequests" (
   invited_by_user_id INT NOT NULL,
   invitation_code VARCHAR(6) NOT NULL,
   status join_request_status DEFAULT 'PENDING',
-  player_number INT CHECK (player_number > 0),
+  player_number INT,
   is_libero BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   responded_at TIMESTAMP,
@@ -89,7 +90,6 @@ CREATE TABLE "Seasons" (
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
   is_archived BOOLEAN DEFAULT FALSE,
-  CHECK (start_date < end_date),
   FOREIGN KEY (league_id) REFERENCES "Leagues"(league_id) ON DELETE CASCADE
 );
 
@@ -127,27 +127,11 @@ CREATE TABLE "Matches" (
   venue VARCHAR(255),
   status game_states DEFAULT 'SCHEDULED',
   winner_team_id INT,
-  home_sets_won INT DEFAULT 0 CHECK (home_sets_won >= 0),
-  away_sets_won INT DEFAULT 0 CHECK (away_sets_won >= 0),
-
-  CHECK (home_team_id <> away_team_id),
-
-  CHECK (
-    (home_sets_won > away_sets_won AND winner_team_id = home_team_id) OR
-    (away_sets_won > home_sets_won AND winner_team_id = away_team_id) OR
-    (home_sets_won = away_sets_won AND winner_team_id IS NULL)
-  ),
-
+  home_sets_won INT DEFAULT 0,
+  away_sets_won INT DEFAULT 0,
   FOREIGN KEY (season_id) REFERENCES "Seasons"(season_id),
-
-  FOREIGN KEY (season_id, home_team_id)
-    REFERENCES "SeasonTeams"(season_id, team_id)
-    ON DELETE CASCADE,
-
-  FOREIGN KEY (season_id, away_team_id)
-    REFERENCES "SeasonTeams"(season_id, team_id)
-    ON DELETE CASCADE,
-
+  FOREIGN KEY (home_team_id) REFERENCES "Teams"(team_id),
+  FOREIGN KEY (away_team_id) REFERENCES "Teams"(team_id),
   FOREIGN KEY (winner_team_id) REFERENCES "Teams"(team_id)
 );
 
@@ -163,13 +147,17 @@ CREATE TABLE "MatchReferees" (
 CREATE TABLE "Sets" (
   set_id SERIAL PRIMARY KEY,
   match_id INT NOT NULL,
-  set_number INT NOT NULL CHECK (set_number > 0),
-  home_team_score INT DEFAULT 0 CHECK (home_team_score >= 0),
-  away_team_score INT DEFAULT 0 CHECK (away_team_score >= 0),
+  set_number INT NOT NULL,
+  home_team_score INT DEFAULT 0,
+  away_team_score INT DEFAULT 0,
   winner_team_id INT,
   FOREIGN KEY (match_id) REFERENCES "Matches"(match_id) ON DELETE CASCADE,
   FOREIGN KEY (winner_team_id) REFERENCES "Teams"(team_id),
-  UNIQUE (match_id, set_number)
+  UNIQUE (match_id, set_number),
+  CHECK (set_number BETWEEN 1 AND 5),
+  CHECK (home_team_score >= 0),
+  CHECK (away_team_score >= 0),
+  CHECK (home_team_score <> away_team_score)
 );
 
 CREATE TABLE "Timeouts" (
@@ -250,7 +238,7 @@ CREATE TABLE "Payments" (
   requester_team_id INT,
   payer_team_id INT,
   payer_user_id INT,
-  amount DECIMAL(10, 2) NOT NULL CHECK (amount > 0),
+  amount DECIMAL(10, 2) NOT NULL,
   description VARCHAR(255) NOT NULL,
   due_date DATE,
   status VARCHAR(50) DEFAULT 'UNPAID',
@@ -264,3 +252,106 @@ CREATE TABLE "Payments" (
     (payer_team_id IS NOT NULL OR payer_user_id IS NOT NULL)
   )
 );
+
+CREATE OR REPLACE FUNCTION enforce_set_rules()
+RETURNS TRIGGER AS $$
+DECLARE
+  match_status game_states;
+  existing_sets INT;
+  home_wins INT;
+  away_wins INT;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    SELECT status INTO match_status
+    FROM "Matches"
+    WHERE match_id = OLD.match_id;
+
+    IF match_status = 'FINISHED' THEN
+      RAISE EXCEPTION 'Cannot modify sets for a finished match';
+    END IF;
+
+    RETURN OLD;
+  END IF;
+
+  SELECT status INTO match_status
+  FROM "Matches"
+  WHERE match_id = NEW.match_id;
+
+  IF match_status = 'FINISHED' THEN
+    RAISE EXCEPTION 'Cannot modify sets for a finished match';
+  END IF;
+
+  SELECT COUNT(*) INTO existing_sets
+  FROM "Sets"
+  WHERE match_id = NEW.match_id
+    AND (TG_OP <> 'UPDATE' OR set_id <> OLD.set_id);
+
+  IF existing_sets >= 5 THEN
+    RAISE EXCEPTION 'A match cannot have more than 5 sets';
+  END IF;
+
+  SELECT
+    COUNT(*) FILTER (WHERE home_team_score > away_team_score),
+    COUNT(*) FILTER (WHERE away_team_score > home_team_score)
+  INTO home_wins, away_wins
+  FROM "Sets"
+  WHERE match_id = NEW.match_id
+    AND (TG_OP <> 'UPDATE' OR set_id <> OLD.set_id);
+
+  IF TG_OP = 'INSERT' AND (home_wins >= 3 OR away_wins >= 3) THEN
+    RAISE EXCEPTION 'Cannot insert additional sets after a team has won 3 sets';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_sets_before_change
+BEFORE INSERT OR UPDATE OR DELETE ON "Sets"
+FOR EACH ROW
+EXECUTE FUNCTION enforce_set_rules();
+
+CREATE OR REPLACE FUNCTION finalize_match_on_finish()
+RETURNS TRIGGER AS $$
+DECLARE
+  total_sets INT;
+  home_wins INT;
+  away_wins INT;
+BEGIN
+  IF NEW.status = 'FINISHED' AND (OLD.status IS DISTINCT FROM 'FINISHED') THEN
+    SELECT
+      COUNT(*),
+      COUNT(*) FILTER (WHERE home_team_score > away_team_score),
+      COUNT(*) FILTER (WHERE away_team_score > home_team_score)
+    INTO total_sets, home_wins, away_wins
+    FROM "Sets"
+    WHERE match_id = NEW.match_id;
+
+    IF total_sets < 3 OR total_sets > 5 THEN
+      RAISE EXCEPTION 'Finished match must have between 3 and 5 sets';
+    END IF;
+
+    IF NOT (
+      (home_wins = 3 AND away_wins BETWEEN 0 AND 2) OR
+      (away_wins = 3 AND home_wins BETWEEN 0 AND 2)
+    ) THEN
+      RAISE EXCEPTION 'Finished match must have exactly one team with 3 set wins';
+    END IF;
+
+    NEW.home_sets_won = home_wins;
+    NEW.away_sets_won = away_wins;
+    IF home_wins = 3 THEN
+      NEW.winner_team_id = NEW.home_team_id;
+    ELSE
+      NEW.winner_team_id = NEW.away_team_id;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_matches_finalize_on_finish
+BEFORE UPDATE ON "Matches"
+FOR EACH ROW
+EXECUTE FUNCTION finalize_match_on_finish();
