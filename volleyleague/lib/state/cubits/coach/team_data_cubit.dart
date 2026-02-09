@@ -33,6 +33,7 @@ class TeamDataCubit extends Cubit<TeamDataState> {
           leagueStandings: const [],
           upcomingFixtures: const [],
           coachedPlayers: const [],
+          coachTeam: null,
         ));
         return;
       }
@@ -44,6 +45,7 @@ class TeamDataCubit extends Cubit<TeamDataState> {
           leagueStandings: const [],
           upcomingFixtures: const [],
           coachedPlayers: const [],
+          coachTeam: null,
         ));
         return;
       }
@@ -124,6 +126,7 @@ class TeamDataCubit extends Cubit<TeamDataState> {
           leagueStandings: const [],
           upcomingFixtures: const [],
           coachedPlayers: allCoachedPlayers,
+          coachTeam: coachTeam,
         ));
         return;
       }
@@ -194,6 +197,7 @@ class TeamDataCubit extends Cubit<TeamDataState> {
           leagueStandings: leagueStandingsList,
           upcomingFixtures: allUpcomingFixtures,
           coachedPlayers: allCoachedPlayers,
+          coachTeam: coachTeam,
         ));
       }
     } catch (e, stackTrace) {

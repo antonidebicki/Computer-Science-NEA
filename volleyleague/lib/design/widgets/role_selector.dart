@@ -12,7 +12,9 @@ class AppRoleSelector extends StatelessWidget {
     super.key,
     required this.selectedRole,
     required this.onChanged,
-    this.roles = const ['Player', 'Team', 'League'],
+    //original showed team intead of coach but i implemented a dumb system where these roles are directly implmented
+    //into the json to the database, so now i have to stick w coach for now, i might change later if my 50h time constaint allows
+    this.roles = const ['Player', 'Coach', 'League'],
   });
 
   @override
@@ -40,7 +42,6 @@ class AppRoleSelector extends StatelessWidget {
                 height: 44,
                 child: Stack(
                   children: [
-                    // Squircle highlight (thumb)
                     AnimatedPositioned(
                       duration: const Duration(milliseconds: 180),
                       curve: Curves.easeOutCubic,
@@ -64,7 +65,6 @@ class AppRoleSelector extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Foreground labels and taps
                     Row(
                       children: [
                         for (int i = 0; i < roles.length; i++) ...[

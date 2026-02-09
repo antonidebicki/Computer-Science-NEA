@@ -133,6 +133,39 @@ class _InvitationInputWidgetState extends State<InvitationInputWidget> {
     _focusNodes[0].requestFocus();
   }
 
+  void _clearAllDigitsSilently() {
+    for (var controller in _digitControllers) {
+      controller.clear();
+    }
+  }
+
+  void _applyPastedCode(String value, int startIndex) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) {
+      return;
+    }
+
+    final totalBoxes = _digitControllers.length;
+    final fillFromStart = digits.length >= totalBoxes;
+    final baseIndex = fillFromStart ? 0 : startIndex;
+
+    if (fillFromStart) {
+      _clearAllDigitsSilently();
+    }
+
+    for (var i = 0; i < digits.length; i++) {
+      final targetIndex = baseIndex + i;
+      if (targetIndex >= totalBoxes) {
+        break;
+      }
+      _digitControllers[targetIndex].text = digits[i];
+    }
+
+    final focusIndex = (baseIndex + digits.length).clamp(0, totalBoxes - 1);
+    _focusNodes[focusIndex].requestFocus();
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppGlassContainer(
@@ -169,6 +202,9 @@ class _InvitationInputWidgetState extends State<InvitationInputWidget> {
                     previousFocusNode: index > 0
                         ? _focusNodes[index - 1]
                         : null,
+                    onPaste: (value) {
+                      _applyPastedCode(value, index);
+                    },
                     onChanged: () {
                       setState(() {});
                     },

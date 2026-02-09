@@ -1,12 +1,17 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../settings/settings_widgets.dart';
 import 'package:provider/provider.dart';
 import '../../../design/index.dart';
 import '../../../state/cubits/auth/auth_cubit.dart';
 import '../../../state/cubits/auth/auth_state.dart';
+import '../../../state/cubits/coach/team_data_cubit.dart';
+import '../../../state/cubits/coach/team_data_state.dart';
 import '../../../state/providers/theme_provider.dart';
 import '../../../design/widgets/logout_button.dart';
+import '../widgets/coach_profile_invite_disabled_card.dart';
+import '../widgets/league_requests.dart';
 
 // the exact same as the player profile but without the team requests
 // i need to find more to add here
@@ -112,6 +117,34 @@ class _CoachProfileScreenState extends State<CoachProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: Spacing.lg),
+                  BlocBuilder<TeamDataCubit, TeamDataState>(
+                    builder: (context, state) {
+                      if (state is TeamDataLoaded && state.coachTeam == null) {
+                        return Column(
+                          children: [
+                            CoachProfileInviteDisabledCard(isDark: isDark),
+                            const SizedBox(height: Spacing.lg),
+                          ],
+                        );
+                      }
+
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                  BlocBuilder<TeamDataCubit, TeamDataState>(
+                    builder: (context, state) {
+                      if (state is TeamDataLoaded && state.coachTeam != null) {
+                        return Column(
+                          children: [
+                            LeagueRequestsSection(isDark: isDark),
+                            const SizedBox(height: Spacing.lg),
+                          ],
+                        );
+                      }
+
+                      return const SizedBox.shrink();
+                    },
+                  ),
 
                   Text(
                     'Settings',

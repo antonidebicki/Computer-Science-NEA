@@ -2,13 +2,11 @@ import 'package:flutter/cupertino.dart';
 import '../../../design/index.dart';
 
 class LeagueAdminLeaguesHeaderCard extends StatelessWidget {
-  final Widget leaguePicker;
-  final Widget seasonInfo;
+  final Widget leaguesContent;
 
   const LeagueAdminLeaguesHeaderCard({
     super.key,
-    required this.leaguePicker,
-    required this.seasonInfo,
+    required this.leaguesContent,
   });
 
   @override
@@ -32,9 +30,7 @@ class LeagueAdminLeaguesHeaderCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: Spacing.lg),
-          leaguePicker,
-          const SizedBox(height: Spacing.sm),
-          seasonInfo,
+          leaguesContent,
         ],
       ),
     );

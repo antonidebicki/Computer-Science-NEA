@@ -1,74 +1,61 @@
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
-import '../../../design/index.dart';
-import '../../../state/providers/theme_provider.dart';
-import '../../../services/api_client.dart';
-import '../../../services/repositories/league_repository.dart';
-import '../../../services/repositories/invitation_repository.dart';
 import '../../../core/models/invitation.dart';
 import '../../../core/models/league.dart';
 import '../../../core/models/season.dart';
+import '../../../design/index.dart';
+import '../../../services/api_client.dart';
+import '../../../services/repositories/invitation_repository.dart';
+import '../../../services/repositories/league_repository.dart';
+import '../../../state/providers/theme_provider.dart';
 import '../widgets/league_invitation_input_widget.dart';
 import '../widgets/league_pending_invitations_widget.dart';
-import '../widgets/league_picker.dart';
 import '../widgets/season_info.dart';
-import '../widgets/league_admin_leagues_header_card.dart';
 
-class LeagueAdminLeaguesScreen extends StatefulWidget {
-  const LeagueAdminLeaguesScreen({super.key});
+class LeagueAdminLeagueSettingsScreen extends StatefulWidget {
+  final League league;
+
+  const LeagueAdminLeagueSettingsScreen({
+    super.key,
+    required this.league,
+  });
 
   @override
-  State<LeagueAdminLeaguesScreen> createState() =>
-      _LeagueAdminLeaguesScreenState();
+  State<LeagueAdminLeagueSettingsScreen> createState() =>
+      _LeagueAdminLeagueSettingsScreenState();
 }
 
-class _LeagueAdminLeaguesScreenState extends State<LeagueAdminLeaguesScreen> {
-  late InvitationRepository _invitationRepository;
-  late LeagueRepository _leagueRepository;
+class _LeagueAdminLeagueSettingsScreenState
+    extends State<LeagueAdminLeagueSettingsScreen> {
+  late final InvitationRepository _invitationRepository;
+  late final LeagueRepository _leagueRepository;
+
   List<LeagueJoinRequest> _pendingInvitations = [];
-  bool _isLoadingInvitations = false;
-  String? _errorMessage;
-  List<League> _leagues = [];
-  League? _selectedLeague;
   Season? _currentSeason;
-  bool _isLoadingLeagues = false;
+  bool _isLoadingInvitations = false;
+  bool _isLoadingSeason = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     _invitationRepository = InvitationRepository(ApiClient());
     _leagueRepository = LeagueRepository(ApiClient());
-    _loadPendingInvitations();
-    _loadLeagues();
+    _loadData();
   }
 
-  Future<void> _loadLeagues() async {
-    setState(() => _isLoadingLeagues = true);
-    try {
-      final leagues = await _leagueRepository.getLeagues();
-      setState(() {
-        _leagues = leagues;
-        _selectedLeague = leagues.isNotEmpty ? leagues.first : null;
-      });
-      await _loadCurrentSeason();
-    } catch (e) {
-      setState(() => _errorMessage = 'Failed to load leagues: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoadingLeagues = false);
-      }
-    }
+  Future<void> _loadData() async {
+    await Future.wait([
+      _loadCurrentSeason(),
+      _loadPendingInvitations(),
+    ]);
   }
 
   Future<void> _loadCurrentSeason() async {
-    final league = _selectedLeague;
-    if (league == null) {
-      setState(() => _currentSeason = null);
-      return;
-    }
-
+    setState(() => _isLoadingSeason = true);
     try {
-      final seasons = await _leagueRepository.getSeasons(league.leagueId);
+      final seasons =
+          await _leagueRepository.getSeasons(widget.league.leagueId);
       final now = DateTime.now();
       final active = seasons.where((season) {
         return !season.isArchived &&
@@ -88,14 +75,18 @@ class _LeagueAdminLeaguesScreenState extends State<LeagueAdminLeaguesScreen> {
       setState(() => _currentSeason = selected);
     } catch (e) {
       setState(() => _currentSeason = null);
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingSeason = false);
+      }
     }
   }
 
   Future<void> _loadPendingInvitations() async {
     setState(() => _isLoadingInvitations = true);
     try {
-      final invitations =
-          await _invitationRepository.getSentLeagueInvitations();
+      final invitations = await _invitationRepository
+          .getSentLeagueInvitations(leagueId: widget.league.leagueId);
       setState(() {
         _pendingInvitations = invitations;
         _errorMessage = null;
@@ -166,10 +157,12 @@ class _LeagueAdminLeaguesScreenState extends State<LeagueAdminLeaguesScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDark;
+    final league = widget.league;
+    final description = league.description?.trim();
+    final rules = league.rules?.trim();
 
     return CupertinoPageScaffold(
       child: Container(
@@ -179,16 +172,15 @@ class _LeagueAdminLeaguesScreenState extends State<LeagueAdminLeaguesScreen> {
         child: CustomScrollView(
           slivers: [
             CupertinoSliverNavigationBar(
-              heroTag: 'league_admin_leagues_nav_bar',
-              largeTitle: const Text('My Leagues'),
+              heroTag: 'league_admin_settings_nav_bar_${league.leagueId}',
+              largeTitle: Text(league.name),
               automaticBackgroundVisibility: false,
               backgroundColor: CupertinoColors.transparent,
               border: null,
               trailing: CupertinoButton(
                 padding: EdgeInsets.zero,
                 onPressed: () {
-                  _loadPendingInvitations();
-                  _loadLeagues();
+                  _loadData();
                 },
                 child: const Icon(CupertinoIcons.refresh),
               ),
@@ -200,17 +192,63 @@ class _LeagueAdminLeaguesScreenState extends State<LeagueAdminLeaguesScreen> {
               ),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  LeagueAdminLeaguesHeaderCard(
-                    leaguePicker: LeaguePicker(
-                      isLoading: _isLoadingLeagues,
-                      leagues: _leagues,
-                      selectedLeague: _selectedLeague,
-                      onSelected: (league) async {
-                        setState(() => _selectedLeague = league);
-                        await _loadCurrentSeason();
-                      },
+                  AppGlassContainer(
+                    padding: const EdgeInsets.all(Spacing.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'League Overview',
+                          style: AppTypography.headline.copyWith(
+                            color: CupertinoColors.label,
+                          ),
+                        ),
+                        const SizedBox(height: Spacing.sm),
+                        Text(
+                          league.name,
+                          style: AppTypography.body.copyWith(
+                            color: CupertinoColors.secondaryLabel,
+                          ),
+                        ),
+                        if (description != null && description.isNotEmpty) ...[
+                          const SizedBox(height: Spacing.md),
+                          Text(
+                            'Description',
+                            style: AppTypography.caption.copyWith(
+                              color: CupertinoColors.secondaryLabel,
+                            ),
+                          ),
+                          const SizedBox(height: Spacing.xs),
+                          Text(
+                            description,
+                            style: AppTypography.body.copyWith(
+                              color: CupertinoColors.label,
+                            ),
+                          ),
+                        ],
+                        if (rules != null && rules.isNotEmpty) ...[
+                          const SizedBox(height: Spacing.md),
+                          Text(
+                            'Rules',
+                            style: AppTypography.caption.copyWith(
+                              color: CupertinoColors.secondaryLabel,
+                            ),
+                          ),
+                          const SizedBox(height: Spacing.xs),
+                          Text(
+                            rules,
+                            style: AppTypography.body.copyWith(
+                              color: CupertinoColors.label,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: Spacing.md),
+                        if (_isLoadingSeason)
+                          const CupertinoActivityIndicator(radius: 10)
+                        else
+                          SeasonInfo(season: _currentSeason),
+                      ],
                     ),
-                    seasonInfo: SeasonInfo(season: _currentSeason),
                   ),
                   const SizedBox(height: Spacing.lg),
                   if (_errorMessage != null)
@@ -232,9 +270,9 @@ class _LeagueAdminLeaguesScreenState extends State<LeagueAdminLeaguesScreen> {
                       ),
                     ),
                   LeagueInvitationInputWidget(
-                    leagueId: _selectedLeague?.leagueId,
+                    leagueId: league.leagueId,
                     seasonId: _currentSeason?.seasonId,
-                    leagueName: _selectedLeague?.name,
+                    leagueName: league.name,
                     seasonName: _currentSeason?.name,
                     onSendInvitation: _handleSendInvitation,
                   ),
@@ -248,7 +286,7 @@ class _LeagueAdminLeaguesScreenState extends State<LeagueAdminLeaguesScreen> {
                       pendingInvitations: _pendingInvitations,
                       onCancelInvitation: _handleCancelInvitation,
                     ),
-                  const SizedBox(height: Spacing.xxxl*3),
+                  const SizedBox(height: Spacing.xxxl * 3),
                 ]),
               ),
             ),

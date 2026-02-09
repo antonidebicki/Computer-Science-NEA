@@ -9,6 +9,7 @@ class InvitationCodeDigitBox extends StatefulWidget {
   final FocusNode? nextFocusNode;
   final FocusNode? previousFocusNode;
   final VoidCallback? onChanged;
+  final ValueChanged<String>? onPaste;
 
   const InvitationCodeDigitBox({
     super.key,
@@ -17,6 +18,7 @@ class InvitationCodeDigitBox extends StatefulWidget {
     this.nextFocusNode,
     this.previousFocusNode,
     this.onChanged,
+    this.onPaste,
   });
 
   @override
@@ -60,10 +62,12 @@ class _InvitationCodeDigitBoxState extends State<InvitationCodeDigitBox> {
             keyboardType: TextInputType.number,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(1),
             ],
-            maxLength: 1,
             onChanged: (value) {
+              if (value.length > 1) {
+                widget.onPaste?.call(value);
+                return;
+              }
               if (value.length == 1) {
                 widget.onChanged?.call();
                 widget.nextFocusNode?.requestFocus();

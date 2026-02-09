@@ -6,6 +6,7 @@ from api.models import (
     TeamOut, 
     TeamCreate, 
     TeamMemberOut, 
+    TeamMemberUpdate,
     TeamJoinRequest,
     CreateTeamInvitationRequest,
     TeamJoinRequestOut,
@@ -107,6 +108,73 @@ async def get_team_members(request: Request, team_id: int, user: dict = Depends(
         )
     
     return [TeamMemberOut(**row) for row in rows]
+
+
+@router.put("/teams/{team_id}/members/{user_id}", response_model=TeamMemberOut)
+async def update_team_member(
+    request: Request,
+    team_id: int,
+    user_id: int,
+    payload: TeamMemberUpdate,
+    user: dict = Depends(AuthUtils.require_role(["COACH", "ADMIN"])),
+) -> TeamMemberOut:
+    pool = request.app.state.pool
+    current_user_id = user.get("user_id")
+
+    async with pool.acquire() as connection:
+        team = await connection.fetchrow(
+            'SELECT team_id, created_by_user_id FROM "Teams" WHERE team_id = $1;',
+            team_id,
+        )
+        if not team:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+
+        if team["created_by_user_id"] != current_user_id and user.get("role") != "ADMIN":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to update this team",
+            )
+
+        member = await connection.fetchrow(
+            'SELECT team_id, user_id FROM "TeamMembers" WHERE team_id = $1 AND user_id = $2;',
+            team_id,
+            user_id,
+        )
+        if not member:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Team member not found",
+            )
+
+        await connection.execute(
+            'UPDATE "TeamMembers" SET player_number = $1 WHERE team_id = $2 AND user_id = $3;',
+            payload.player_number,
+            team_id,
+            user_id,
+        )
+
+        row = await connection.fetchrow(
+            """
+            SELECT 
+                tm.team_id,
+                tm.user_id,
+                tm.role_in_team,
+                tm.player_number,
+                tm.is_captain,
+                tm.is_libero,
+                u.username,
+                u.email,
+                u.full_name,
+                u.role as user_role
+            FROM "TeamMembers" tm
+            JOIN "Users" u ON tm.user_id = u.user_id
+            WHERE tm.team_id = $1 AND tm.user_id = $2;
+            """,
+            team_id,
+            user_id,
+        )
+
+    return TeamMemberOut(**row)
 
 
 @router.post("/teams/{team_id}/join", response_model=TeamMemberOut, status_code=status.HTTP_201_CREATED)

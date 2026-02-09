@@ -1,5 +1,6 @@
 import '../../../core/models/league.dart';
 import '../../../core/models/match.dart';
+import '../../../core/models/team.dart';
 import '../../../core/models/team_member.dart';
 
 abstract class TeamDataState {}
@@ -22,11 +23,13 @@ class TeamDataLoaded extends TeamDataState {
   final List<LeagueStandingsInfo> leagueStandings;
   final List<MatchData> upcomingFixtures;
   final List<TeamMember> coachedPlayers;
+  final Team? coachTeam;
 
   TeamDataLoaded({
     required this.leagueStandings,
     required this.upcomingFixtures,
     required this.coachedPlayers,
+    required this.coachTeam,
   });
 }
 

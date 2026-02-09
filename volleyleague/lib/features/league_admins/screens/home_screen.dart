@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import '../../../design/index.dart';
 import '../../../state/providers/theme_provider.dart';
 import '../../widgets/floating_glass_nav_bar.dart';
-import 'league_admin_leagues_screen.dart';
-import 'league_admin_teams_screen.dart';
-import 'league_admin_profile_screen.dart';
+import 'leagues_screen.dart';
+import 'teams_screen.dart';
+import 'profile_screen.dart';
 
 class LeagueAdminHomeScreen extends StatelessWidget {
   const LeagueAdminHomeScreen({super.key});

@@ -9,13 +9,15 @@ import '../../../state/cubits/auth/auth_cubit.dart';
 import '../../../state/cubits/auth/auth_state.dart';
 import '../../../state/providers/theme_provider.dart';
 import '../../../services/repositories/invitation_repository.dart';
+import '../../../services/repositories/team_repository.dart';
 import '../../../services/api_client.dart';
 import '../../../core/models/invitation.dart';
+import '../../../core/models/team_member.dart';
 import '../../settings/settings_widgets.dart';
 import '../widgets/invitation_input_widget.dart';
 import '../widgets/pending_invitations_widget.dart';
 import '../widgets/players_list.dart';
-import '../widgets/league_requests_section.dart';
+import '../widgets/create_team_glass_card.dart';
 
 class TeamScreen extends StatefulWidget {
   const TeamScreen({super.key});
@@ -24,7 +26,9 @@ class TeamScreen extends StatefulWidget {
 }
 
 class _TeamScreenState extends State<TeamScreen> {
-  late InvitationRepository _invitationRepository;
+  final InvitationRepository _invitationRepository =
+      InvitationRepository(ApiClient());
+  final TeamRepository _teamRepository = TeamRepository(ApiClient());
   List<TeamJoinRequest> _pendingInvitations = [];
   bool _isLoadingInvitations = false;
   String? _errorMessage;
@@ -36,7 +40,6 @@ class _TeamScreenState extends State<TeamScreen> {
   @override
   void initState() {
     super.initState();
-    _invitationRepository = InvitationRepository(ApiClient());
     _loadPendingInvitations();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadTeamInvitationCode();
@@ -102,15 +105,12 @@ class _TeamScreenState extends State<TeamScreen> {
       }
 
       final teamDataState = context.read<TeamDataCubit>().state;
-      if (teamDataState is! TeamDataLoaded ||
-          teamDataState.coachedPlayers.isEmpty) {
+      if (teamDataState is! TeamDataLoaded || teamDataState.coachTeam == null) {
         _showErrorMessage('No team data available');
         return;
       }
 
-
-      //need this for the players widget to work
-      final teamId = teamDataState.coachedPlayers.first.teamId;
+      final teamId = teamDataState.coachTeam!.teamId;
 
       final request = CreateTeamInvitationRequest(
         teamId: teamId,
@@ -189,14 +189,51 @@ class _TeamScreenState extends State<TeamScreen> {
   int? _getCoachTeamId() {
     try {
       final teamDataState = context.read<TeamDataCubit>().state;
-      if (teamDataState is TeamDataLoaded &&
-          teamDataState.coachedPlayers.isNotEmpty) {
-        return teamDataState.coachedPlayers.first.teamId;
+      if (teamDataState is TeamDataLoaded && teamDataState.coachTeam != null) {
+        return teamDataState.coachTeam!.teamId;
       }
     } catch (e) {
       debugPrint('Error getting team ID: $e');
     }
     return null;
+  }
+
+  Future<void> _handleCreateTeam(String teamName, String? logoUrl) async {
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! AuthAuthenticated) {
+      throw Exception('Authentication required');
+    }
+
+    await _teamRepository.createTeam(
+      name: teamName,
+      createdByUserId: authState.user.userId,
+      logoUrl: logoUrl,
+    );
+
+    if (!mounted) return;
+    _teamCodeLoaded = false;
+    _teamInvitationCode = null;
+    _showSuccessMessage('Team created successfully!');
+    context.read<TeamDataCubit>().refresh();
+  }
+
+  Future<void> _handleUpdatePlayerNumber(
+    TeamMember player,
+    int playerNumber,
+  ) async {
+    try {
+      await _teamRepository.updateTeamMemberNumber(
+        teamId: player.teamId,
+        userId: player.userId,
+        playerNumber: playerNumber,
+      );
+      if (!mounted) return;
+      context.read<TeamDataCubit>().refresh();
+    } catch (e) {
+      if (mounted) {
+        _showErrorMessage('Failed to update player number: ${e.toString()}');
+      }
+    }
   }
 
   @override
@@ -243,68 +280,90 @@ class _TeamScreenState extends State<TeamScreen> {
                   BlocBuilder<TeamDataCubit, TeamDataState>(
                     builder: (context, state) {
                       if (state is TeamDataLoaded) {
+                        if (state.coachTeam == null) {
+                          return CreateTeamGlassCard(
+                            isDark: isDark,
+                            onCreateTeam: _handleCreateTeam,
+                          );
+                        }
+
                         if (!_teamCodeLoaded) {
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             _loadTeamInvitationCode();
                           });
                         }
-                        return PlayersList(players: state.coachedPlayers);
+
+                        return PlayersList(
+                          players: state.coachedPlayers,
+                          onUpdatePlayerNumber: _handleUpdatePlayerNumber,
+                        );
                       }
+
                       return PlayersList(players: const []);
                     },
                   ),
-                  const SizedBox(height: Spacing.lg),
-                  SettingsWidgets.buildInvitationCodeSection(
-                    context: context,
-                    isDark: isDark,
-                    invitationCode: _teamInvitationCode,
-                    showInvitationCode: _showTeamInvitationCode,
-                    loadingCode: _loadingTeamCode,
-                    onToggleShowCode: () {
-                      setState(() {
-                        _showTeamInvitationCode = !_showTeamInvitationCode;
-                      });
+                  BlocBuilder<TeamDataCubit, TeamDataState>(
+                    builder: (context, state) {
+                      if (state is TeamDataLoaded && state.coachTeam == null) {
+                        return const SizedBox(height: Spacing.xxxl);
+                      }
+
+                      return Column(
+                        children: [
+                          const SizedBox(height: Spacing.lg),
+                          SettingsWidgets.buildInvitationCodeSection(
+                            context: context,
+                            isDark: isDark,
+                            invitationCode: _teamInvitationCode,
+                            showInvitationCode: _showTeamInvitationCode,
+                            loadingCode: _loadingTeamCode,
+                            onToggleShowCode: () {
+                              setState(() {
+                                _showTeamInvitationCode =
+                                    !_showTeamInvitationCode;
+                              });
+                            },
+                            helperText:
+                                'Share this code with a league admin to invite your team.',
+                          ),
+                          const SizedBox(height: Spacing.lg),
+                          if (_errorMessage != null)
+                            Container(
+                              padding: const EdgeInsets.all(Spacing.md),
+                              margin: const EdgeInsets.only(bottom: Spacing.lg),
+                              decoration: BoxDecoration(
+                                color: CupertinoColors.systemRed.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: CupertinoColors.systemRed
+                                      .withOpacity(0.3),
+                                ),
+                              ),
+                              child: Text(
+                                _errorMessage!,
+                                style: AppTypography.callout.copyWith(
+                                  color: CupertinoColors.systemRed,
+                                ),
+                              ),
+                            ),
+                          InvitationInputWidget(
+                            teamId: _getCoachTeamId() ?? 0,
+                            onSendInvitation: _handleSendInvitation,
+                          ),
+                          const SizedBox(height: Spacing.lg),
+                          if (_isLoadingInvitations)
+                            const Center(
+                              child: CupertinoActivityIndicator(radius: 16),
+                            )
+                          else
+                            PendingInvitationsWidget(
+                              pendingInvitations: _pendingInvitations,
+                              onCancelInvitation: _handleCancelInvitation,
+                            ),
+                        ],
+                      );
                     },
-                    helperText:
-                        'Share this code with a league admin to invite your team.',
                   ),
-                  const SizedBox(height: Spacing.lg),
-                  LeagueRequestsSection(isDark: isDark),
-                  const SizedBox(height: Spacing.lg),
-                  if (_errorMessage != null)
-                    Container(
-                      padding: const EdgeInsets.all(Spacing.md),
-                      margin: const EdgeInsets.only(bottom: Spacing.lg),
-                      decoration: BoxDecoration(
-                        color: CupertinoColors.systemRed.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: CupertinoColors.systemRed.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Text(
-                        _errorMessage!,
-                        style: AppTypography.callout.copyWith(
-                          color: CupertinoColors.systemRed,
-                        ),
-                      ),
-                    ),
-                  // Invitation input widget
-                  InvitationInputWidget(
-                    teamId: _getCoachTeamId() ?? 0,
-                    onSendInvitation: _handleSendInvitation,
-                  ),
-                  const SizedBox(height: Spacing.lg),
-                  // Pending invitations
-                  if (_isLoadingInvitations)
-                    const Center(
-                      child: CupertinoActivityIndicator(radius: 16),
-                    )
-                  else
-                    PendingInvitationsWidget(
-                      pendingInvitations: _pendingInvitations,
-                      onCancelInvitation: _handleCancelInvitation,
-                    ),
                   const SizedBox(height: Spacing.xxxl),
                 ]),
               ),

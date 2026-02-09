@@ -100,6 +100,10 @@ class TeamMemberOut(BaseModel):
   user_role: str
 
 
+class TeamMemberUpdate(BaseModel):
+    player_number: Optional[int] = None
+
+
 class TeamJoinRequest(BaseModel):
   player_number: Optional[int] = None
   is_captain: bool = False

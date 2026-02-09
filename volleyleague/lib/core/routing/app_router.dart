@@ -5,7 +5,7 @@ import 'package:volleyleague/features/auth/screens/login_screen.dart';
 import 'package:volleyleague/features/auth/screens/register_screen.dart';
 import 'package:volleyleague/features/player/screens/player_home_screen.dart';
 import 'package:volleyleague/features/teams/screens/coach_home_screen.dart';
-import 'package:volleyleague/features/league_admins/screens/league_admin_home_screen.dart';
+import 'package:volleyleague/features/league_admins/screens/home_screen.dart';
 import 'package:volleyleague/state/cubits/auth/auth_cubit.dart';
 
 /// routes for the app
