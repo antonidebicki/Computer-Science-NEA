@@ -1,5 +1,5 @@
 import '../../../core/models/league.dart';
-import '../../../core/models/match.dart';
+import '../../../core/models/match_data.dart';
 import '../../../core/models/team.dart';
 import '../../../core/models/team_member.dart';
 
@@ -68,14 +68,3 @@ class StandingData {
   }
 }
 
-class MatchData {
-  final Match match;
-  final String homeTeamName;
-  final String awayTeamName;
-
-  MatchData({
-    required this.match,
-    required this.homeTeamName,
-    required this.awayTeamName,
-  });
-}

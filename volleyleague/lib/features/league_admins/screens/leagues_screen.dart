@@ -79,7 +79,7 @@ class _LeagueAdminLeaguesScreenState extends State<LeagueAdminLeaguesScreen> {
               ),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  LeagueAdminLeaguesHeaderCard(
+                  LeaguesHeaderCard(
                     leaguesContent: _buildLeagueButtons(context),
                   ),
                   const SizedBox(height: Spacing.lg),

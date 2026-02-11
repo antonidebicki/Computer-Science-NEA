@@ -40,6 +40,7 @@ CREATE TABLE "Teams" (
   name VARCHAR(255) NOT NULL,
   created_by_user_id INT NOT NULL,
   logo_url TEXT,
+  home_ground VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (created_by_user_id) REFERENCES "Users"(user_id)
 );
@@ -89,6 +90,10 @@ CREATE TABLE "Seasons" (
   name VARCHAR(255) NOT NULL,
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
+  matches_per_week_per_team INT NOT NULL DEFAULT 1,
+  weeks_between_matches INT NOT NULL DEFAULT 1,
+  double_round_robin BOOLEAN NOT NULL DEFAULT FALSE,
+  allowed_weekdays INT[] NOT NULL DEFAULT '{1,3,5}',
   is_archived BOOLEAN DEFAULT FALSE,
   FOREIGN KEY (league_id) REFERENCES "Leagues"(league_id) ON DELETE CASCADE
 );

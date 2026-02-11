@@ -23,7 +23,7 @@ class _InvitationInputWidgetState extends State<InvitationInputWidget> {
   late List<FocusNode> _focusNodes;
   bool _isLoading = false;
   // dont remove the field for some reason the error message shows its unused but its necessary
-  //vs code is js bugged
+  // vs code is js bugged
   String? _errorMessage;
 
   @override

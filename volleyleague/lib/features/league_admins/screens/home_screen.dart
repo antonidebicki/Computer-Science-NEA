@@ -29,7 +29,7 @@ class _LeagueAdminHomeContentState extends State<_LeagueAdminHomeContent> {
 
   final List<NavBarItem> _navItems = [
     NavBarItem(icon: AppIcons.home, label: 'Home'),
-    NavBarItem(icon: AppIcons.league, label: 'My Leagues'),
+    NavBarItem(icon: AppIcons.league, label: 'Leagues'),
     NavBarItem(icon: AppIcons.team, label: 'Teams'),
     NavBarItem(icon: AppIcons.profile, label: 'Profile'),
   ];

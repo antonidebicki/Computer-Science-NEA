@@ -3,6 +3,7 @@ class Team {
   final String name;
   final int createdByUserId;
   final String? logoUrl;
+  final String? homeGround;
   final DateTime createdAt;
 
   const Team({
@@ -10,6 +11,7 @@ class Team {
     required this.name,
     required this.createdByUserId,
     this.logoUrl,
+    this.homeGround,
     required this.createdAt,
   });
 
@@ -19,6 +21,7 @@ class Team {
       name: json['name'] as String,
       createdByUserId: json['created_by_user_id'] as int,
       logoUrl: json['logo_url'] as String?,
+      homeGround: json['home_ground'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -29,6 +32,7 @@ class Team {
       'name': name,
       'created_by_user_id': createdByUserId,
       'logo_url': logoUrl,
+      'home_ground': homeGround,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -38,6 +42,7 @@ class Team {
     String? name,
     int? createdByUserId,
     String? logoUrl,
+    String? homeGround,
     DateTime? createdAt,
   }) {
     return Team(
@@ -45,6 +50,7 @@ class Team {
       name: name ?? this.name,
       createdByUserId: createdByUserId ?? this.createdByUserId,
       logoUrl: logoUrl ?? this.logoUrl,
+      homeGround: homeGround ?? this.homeGround,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -59,6 +65,6 @@ class Team {
 
   @override
   String toString() {
-    return 'Team{teamId: $teamId, name: $name, createdByUserId: $createdByUserId, logoUrl: $logoUrl}';
+    return 'Team{teamId: $teamId, name: $name, createdByUserId: $createdByUserId, logoUrl: $logoUrl, homeGround: $homeGround}';
   }
 }

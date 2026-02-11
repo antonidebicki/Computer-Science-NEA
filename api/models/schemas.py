@@ -78,6 +78,7 @@ class TeamOut(BaseModel):
   name: str
   created_by_user_id: int
   logo_url: Optional[str]
+    home_ground: Optional[str]
   created_at: Optional[datetime]
 
 
@@ -85,6 +86,13 @@ class TeamCreate(BaseModel):
   name: Annotated[str, constr(strip_whitespace=True, min_length=1)]
   created_by_user_id: int
   logo_url: Optional[Annotated[str, constr(strip_whitespace=True, min_length=1)]] = None
+    home_ground: Optional[Annotated[str, constr(strip_whitespace=True, min_length=1)]] = None
+
+
+class TeamUpdate(BaseModel):
+    name: Optional[Annotated[str, constr(strip_whitespace=True, min_length=1)]] = None
+    logo_url: Optional[Annotated[str, constr(strip_whitespace=True, min_length=1)]] = None
+    home_ground: Optional[Annotated[str, constr(strip_whitespace=True, min_length=1)]] = None
 
 
 class TeamMemberOut(BaseModel):
@@ -201,6 +209,10 @@ class SeasonOut(BaseModel):
     name: str
     start_date: datetime
     end_date: datetime
+    matches_per_week_per_team: int
+    weeks_between_matches: int
+    double_round_robin: bool
+    allowed_weekdays: List[int]
     is_archived: bool
 
 
@@ -209,6 +221,20 @@ class SeasonCreate(BaseModel):
     name: Annotated[str, constr(strip_whitespace=True, min_length=1)]
     start_date: datetime
     end_date: datetime
+    matches_per_week_per_team: int = 1
+    weeks_between_matches: int = 1
+    double_round_robin: bool = False
+    allowed_weekdays: List[int] = Field(default_factory=lambda: [1, 3, 5])
+
+
+class SeasonUpdate(BaseModel):
+    name: Annotated[str, constr(strip_whitespace=True, min_length=1)]
+    start_date: datetime
+    end_date: datetime
+    matches_per_week_per_team: int = 1
+    weeks_between_matches: int = 1
+    double_round_robin: bool = False
+    allowed_weekdays: List[int] = Field(default_factory=lambda: [1, 3, 5])
 
 
 class MatchOut(BaseModel):

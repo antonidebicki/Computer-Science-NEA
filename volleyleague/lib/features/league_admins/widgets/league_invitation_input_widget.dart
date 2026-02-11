@@ -92,7 +92,7 @@ class _LeagueInvitationInputWidgetState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Invite Team to League',
+            'Invite Team to a Season',
             style: AppTypography.headline.copyWith(
               color: CupertinoColors.label,
             ),

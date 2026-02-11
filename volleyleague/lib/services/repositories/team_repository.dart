@@ -36,14 +36,38 @@ class TeamRepository {
     required String name,
     required int createdByUserId,
     String? logoUrl,
+    String? homeGround,
   }) async {
     final payload = {
       'name': name,
       'created_by_user_id': createdByUserId,
       if (logoUrl != null && logoUrl.trim().isNotEmpty) 'logo_url': logoUrl,
+      if (homeGround != null && homeGround.trim().isNotEmpty)
+        'home_ground': homeGround,
     };
 
     final data = await _apiClient.post('/api/teams', payload);
+    return Team.fromJson(data as Map<String, dynamic>);
+  }
+
+  Future<Team> updateTeam({
+    required int teamId,
+    String? name,
+    String? logoUrl,
+    String? homeGround,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (name != null && name.trim().isNotEmpty) {
+      payload['name'] = name;
+    }
+    if (logoUrl != null && logoUrl.trim().isNotEmpty) {
+      payload['logo_url'] = logoUrl;
+    }
+    if (homeGround != null && homeGround.trim().isNotEmpty) {
+      payload['home_ground'] = homeGround;
+    }
+
+    final data = await _apiClient.put('/api/teams/$teamId', payload);
     return Team.fromJson(data as Map<String, dynamic>);
   }
 

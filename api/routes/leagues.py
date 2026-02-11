@@ -89,7 +89,9 @@ async def list_league_seasons(request: Request, league_id: int, user: dict = Dep
         # Get all seasons for this league
         rows = await connection.fetch(
             """
-            SELECT season_id, league_id, name, start_date, end_date, is_archived
+                 SELECT season_id, league_id, name, start_date, end_date,
+                     matches_per_week_per_team, weeks_between_matches,
+                     double_round_robin, allowed_weekdays, is_archived
             FROM "Seasons"
             WHERE league_id = $1
             ORDER BY start_date DESC;
@@ -122,14 +124,23 @@ async def create_league_season(request: Request, league_id: int, payload: Season
         try:
             row = await connection.fetchrow(
                 """
-                INSERT INTO "Seasons" (league_id, name, start_date, end_date)
-                VALUES ($1, $2, $3, $4)
-                RETURNING season_id, league_id, name, start_date, end_date, is_archived;
+                INSERT INTO "Seasons"
+                    (league_id, name, start_date, end_date,
+                     matches_per_week_per_team, weeks_between_matches,
+                     double_round_robin, allowed_weekdays)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                RETURNING season_id, league_id, name, start_date, end_date,
+                          matches_per_week_per_team, weeks_between_matches,
+                          double_round_robin, allowed_weekdays, is_archived;
                 """,
                 league_id,
                 payload.name,
                 payload.start_date,
                 payload.end_date,
+                payload.matches_per_week_per_team,
+                payload.weeks_between_matches,
+                payload.double_round_robin,
+                payload.allowed_weekdays,
             )
         except Exception as exc:
             raise HTTPException(

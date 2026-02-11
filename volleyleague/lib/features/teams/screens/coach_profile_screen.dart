@@ -2,7 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../settings/settings_widgets.dart';
-import 'package:provider/provider.dart';
 import '../../../design/index.dart';
 import '../../../state/cubits/auth/auth_cubit.dart';
 import '../../../state/cubits/auth/auth_state.dart';
@@ -12,6 +11,7 @@ import '../../../state/providers/theme_provider.dart';
 import '../../../design/widgets/logout_button.dart';
 import '../widgets/coach_profile_invite_disabled_card.dart';
 import '../widgets/league_requests.dart';
+import '../widgets/home_ground_editor_card.dart';
 
 // the exact same as the player profile but without the team requests
 // i need to find more to add here
@@ -23,6 +23,7 @@ class CoachProfileScreen extends StatefulWidget {
 }
 
 class _CoachProfileScreenState extends State<CoachProfileScreen> {
+
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDark;
@@ -131,6 +132,19 @@ class _CoachProfileScreenState extends State<CoachProfileScreen> {
                       return const SizedBox.shrink();
                     },
                   ),
+                  BlocBuilder<TeamDataCubit, TeamDataState>(
+                    builder: (context, state) {
+                      if (state is TeamDataLoaded && state.coachTeam != null) {
+                        return HomeGroundEditorCard(
+                          teamId: state.coachTeam!.teamId,
+                          homeGround: state.coachTeam!.homeGround,
+                        );
+                      }
+
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                  const SizedBox(height: Spacing.lg),
                   BlocBuilder<TeamDataCubit, TeamDataState>(
                     builder: (context, state) {
                       if (state is TeamDataLoaded && state.coachTeam != null) {

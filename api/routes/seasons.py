@@ -1,7 +1,7 @@
 from typing import List, Optional
 import datetime
 from fastapi import APIRouter, HTTPException, Request, status, Depends, Query
-from api.models import SeasonOut, SeasonCreate, GenerateFixturesRequest, GenerateFixturesResponse, StandingOut, RecalculateStandingsResponse
+from api.models import SeasonOut, SeasonCreate, SeasonUpdate, GenerateFixturesRequest, GenerateFixturesResponse, StandingOut, RecalculateStandingsResponse
 from api.auth import AuthUtils
 from api.services.fixture_generator import generate_round_robin, assign_match_dates
 from api.services.standings_engine import recalculate_season_standings, initialise_season_standings
@@ -15,7 +15,9 @@ async def list_seasons(request: Request, user: dict = Depends(AuthUtils.get_curr
     async with pool.acquire() as connection:
         rows = await connection.fetch(
             """
-            SELECT season_id, league_id, name, start_date, end_date, is_archived
+                 SELECT season_id, league_id, name, start_date, end_date,
+                     matches_per_week_per_team, weeks_between_matches,
+                     double_round_robin, allowed_weekdays, is_archived
             FROM "Seasons"
             ORDER BY start_date DESC;
             """
@@ -29,7 +31,9 @@ async def get_season(request: Request, season_id: int, user: dict = Depends(Auth
     async with pool.acquire() as connection:
         row = await connection.fetchrow(
             """
-            SELECT season_id, league_id, name, start_date, end_date, is_archived
+                 SELECT season_id, league_id, name, start_date, end_date,
+                     matches_per_week_per_team, weeks_between_matches,
+                     double_round_robin, allowed_weekdays, is_archived
             FROM "Seasons"
             WHERE season_id = $1;
             """,
@@ -47,14 +51,23 @@ async def create_season(request: Request, payload: SeasonCreate, user: dict = De
         try:
             row = await connection.fetchrow(
                 """
-                INSERT INTO "Seasons" (league_id, name, start_date, end_date)
-                VALUES ($1, $2, $3, $4)
-                RETURNING season_id, league_id, name, start_date, end_date, is_archived;
+                INSERT INTO "Seasons"
+                    (league_id, name, start_date, end_date,
+                     matches_per_week_per_team, weeks_between_matches,
+                     double_round_robin, allowed_weekdays)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                RETURNING season_id, league_id, name, start_date, end_date,
+                          matches_per_week_per_team, weeks_between_matches,
+                          double_round_robin, allowed_weekdays, is_archived;
                 """,
                 payload.league_id,
                 payload.name,
                 payload.start_date,
                 payload.end_date,
+                payload.matches_per_week_per_team,
+                payload.weeks_between_matches,
+                payload.double_round_robin,
+                payload.allowed_weekdays,
             )
         except Exception as exc:
             raise HTTPException(
@@ -62,6 +75,80 @@ async def create_season(request: Request, payload: SeasonCreate, user: dict = De
                 detail="Failed to create season.",
             ) from exc
     return SeasonOut(**row)
+
+
+@router.put("/seasons/{season_id}", response_model=SeasonOut)
+async def update_season(
+    request: Request,
+    season_id: int,
+    payload: SeasonUpdate,
+    user: dict = Depends(AuthUtils.require_role(["ADMIN"]))
+) -> SeasonOut:
+    pool = request.app.state.pool
+    async with pool.acquire() as connection:
+        row = await connection.fetchrow(
+            """
+            UPDATE "Seasons"
+            SET name = $1,
+                start_date = $2,
+                end_date = $3,
+                matches_per_week_per_team = $4,
+                weeks_between_matches = $5,
+                double_round_robin = $6,
+                allowed_weekdays = $7
+            WHERE season_id = $8
+            RETURNING season_id, league_id, name, start_date, end_date,
+                      matches_per_week_per_team, weeks_between_matches,
+                      double_round_robin, allowed_weekdays, is_archived;
+            """,
+            payload.name,
+            payload.start_date,
+            payload.end_date,
+            payload.matches_per_week_per_team,
+            payload.weeks_between_matches,
+            payload.double_round_robin,
+            payload.allowed_weekdays,
+            season_id,
+        )
+
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+
+    return SeasonOut(**row)
+
+
+@router.delete("/seasons/{season_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_season(
+    request: Request,
+    season_id: int,
+    user: dict = Depends(AuthUtils.require_role(["ADMIN"]))
+) -> None:
+    pool = request.app.state.pool
+    async with pool.acquire() as connection:
+        season = await connection.fetchrow(
+            'SELECT season_id FROM "Seasons" WHERE season_id = $1',
+            season_id,
+        )
+        if not season:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Season not found",
+            )
+
+        match_exists = await connection.fetchval(
+            'SELECT 1 FROM "Matches" WHERE season_id = $1 LIMIT 1',
+            season_id,
+        )
+        if match_exists:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot delete a season that has matches.",
+            )
+
+        await connection.execute(
+            'DELETE FROM "Seasons" WHERE season_id = $1',
+            season_id,
+        )
 
 
 @router.post("/seasons/{season_id}/generate-fixtures", response_model=GenerateFixturesResponse, status_code=status.HTTP_201_CREATED)
@@ -119,12 +206,47 @@ async def generate_fixtures(
                 detail="Invalid start_date format. Use YYYY-MM-DD."
             )
         
+        allowed_weekdays = payload.allowed_weekdays
+        if allowed_weekdays is not None:
+            if len(allowed_weekdays) == 7 and all(day in (0, 1) for day in allowed_weekdays):
+                normalized_weekdays = allowed_weekdays
+            else:
+                try:
+                    days = {int(day) for day in allowed_weekdays}
+                except (TypeError, ValueError) as exc:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="allowed_weekdays must be a list of integers",
+                    ) from exc
+
+                if not days:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="allowed_weekdays must include at least one day",
+                    )
+
+                if any(day < 1 or day > 7 for day in days):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="allowed_weekdays values must be between 1 and 7",
+                    )
+
+                normalized_weekdays = [1 if (index + 1) in days else 0 for index in range(7)]
+        else:
+            normalized_weekdays = None
+
+        team_rows = await connection.fetch(
+            'SELECT team_id, home_ground FROM "Teams" WHERE team_id = ANY($1);',
+            team_ids,
+        )
+        team_home_grounds = {row["team_id"]: row["home_ground"] for row in team_rows}
+
         scheduled_matches = assign_match_dates(
             matches,
             start_date,
             matches_per_week_per_team=payload.matches_per_week_per_team,
             weeks_between_matches=payload.weeks_between_matches,
-            allowed_weekdays=payload.allowed_weekdays
+            allowed_weekdays=normalized_weekdays
         )
         
         async with connection.transaction():
@@ -142,16 +264,18 @@ async def generate_fixtures(
             for match in scheduled_matches:
                 match_datetime = datetime.datetime.combine(match['match_date'], datetime.time(19, 0))  # defaults to 1900, js a common time no particular reason
                 
+                venue = team_home_grounds.get(match['team_a_id'])
                 await connection.execute(
                     """
                     INSERT INTO "Matches" 
-                    (season_id, home_team_id, away_team_id, match_datetime, status)
-                    VALUES ($1, $2, $3, $4, $5::game_states)
+                    (season_id, home_team_id, away_team_id, match_datetime, venue, status)
+                    VALUES ($1, $2, $3, $4, $5, $6::game_states)
                     """,
                     season_id,
                     match['team_a_id'],
                     match['team_b_id'],
                     match_datetime,
+                    venue,
                     match['status']
                 )
         

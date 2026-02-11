@@ -3,9 +3,10 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, Request, status, Depends
 from asyncpg.exceptions import UniqueViolationError
 from api.models import (
-    TeamOut, 
-    TeamCreate, 
-    TeamMemberOut, 
+    TeamOut,
+    TeamCreate,
+    TeamUpdate,
+    TeamMemberOut,
     TeamMemberUpdate,
     TeamJoinRequest,
     CreateTeamInvitationRequest,
@@ -26,7 +27,7 @@ async def list_teams(request: Request, user: dict = Depends(AuthUtils.get_curren
     async with pool.acquire() as connection:
         rows = await connection.fetch(
             """
-            SELECT team_id, name, created_by_user_id, logo_url, created_at
+            SELECT team_id, name, created_by_user_id, logo_url, home_ground, created_at
             FROM "Teams"
             ORDER BY name;
             """
@@ -40,7 +41,7 @@ async def get_team(request: Request, team_id: int, user: dict = Depends(AuthUtil
     async with pool.acquire() as connection:
         row = await connection.fetchrow(
             """
-            SELECT team_id, name, created_by_user_id, logo_url, created_at
+            SELECT team_id, name, created_by_user_id, logo_url, home_ground, created_at
             FROM "Teams"
             WHERE team_id = $1;
             """,
@@ -58,19 +59,62 @@ async def create_team(request: Request, payload: TeamCreate, user: dict = Depend
         try:
             row = await connection.fetchrow(
                 """
-                INSERT INTO "Teams" (name, created_by_user_id, logo_url)
-                VALUES ($1, $2, $3)
-                RETURNING team_id, name, created_by_user_id, logo_url, created_at;
+                INSERT INTO "Teams" (name, created_by_user_id, logo_url, home_ground)
+                VALUES ($1, $2, $3, $4)
+                RETURNING team_id, name, created_by_user_id, logo_url, home_ground, created_at;
                 """,
                 payload.name,
                 payload.created_by_user_id,
                 payload.logo_url,
+                payload.home_ground,
             )
         except Exception as exc:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create team.",
             ) from exc
+    return TeamOut(**row)
+
+
+@router.put("/teams/{team_id}", response_model=TeamOut)
+async def update_team(
+    request: Request,
+    team_id: int,
+    payload: TeamUpdate,
+    user: dict = Depends(AuthUtils.require_role(["COACH", "ADMIN"])),
+) -> TeamOut:
+    pool = request.app.state.pool
+    current_user_id = user.get("user_id")
+
+    async with pool.acquire() as connection:
+        team = await connection.fetchrow(
+            'SELECT team_id, created_by_user_id FROM "Teams" WHERE team_id = $1;',
+            team_id,
+        )
+        if not team:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+
+        if team["created_by_user_id"] != current_user_id and user.get("role") != "ADMIN":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to update this team",
+            )
+
+        row = await connection.fetchrow(
+            """
+            UPDATE "Teams"
+            SET name = COALESCE($1, name),
+                logo_url = COALESCE($2, logo_url),
+                home_ground = COALESCE($3, home_ground)
+            WHERE team_id = $4
+            RETURNING team_id, name, created_by_user_id, logo_url, home_ground, created_at;
+            """,
+            payload.name,
+            payload.logo_url,
+            payload.home_ground,
+            team_id,
+        )
+
     return TeamOut(**row)
 
 

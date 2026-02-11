@@ -6,6 +6,7 @@ import '../../../services/repositories/team_repository.dart';
 import '../../../services/api_client.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/models/season.dart';
+import '../../../core/models/match_data.dart';
 import 'player_data_state.dart';
 
 // maybe will turn into a bloc one day but too complicated for now

@@ -47,14 +47,48 @@ class LeagueRepository {
     required String name,
     required DateTime startDate,
     required DateTime endDate,
+    int matchesPerWeekPerTeam = 1,
+    int weeksBetweenMatches = 1,
+    bool doubleRoundRobin = false,
+    List<int> allowedWeekdays = const [1, 3, 5],
   }) async {
     final data = await _apiClient.post('/api/seasons', {
       'league_id': leagueId,
       'name': name,
       'start_date': startDate.toIso8601String().split('T')[0],
       'end_date': endDate.toIso8601String().split('T')[0],
+      'matches_per_week_per_team': matchesPerWeekPerTeam,
+      'weeks_between_matches': weeksBetweenMatches,
+      'double_round_robin': doubleRoundRobin,
+      'allowed_weekdays': allowedWeekdays,
     });
     return Season.fromJson(data);
+  }
+
+  Future<Season> updateSeason({
+    required int seasonId,
+    required String name,
+    required DateTime startDate,
+    required DateTime endDate,
+    int matchesPerWeekPerTeam = 1,
+    int weeksBetweenMatches = 1,
+    bool doubleRoundRobin = false,
+    List<int> allowedWeekdays = const [1, 3, 5],
+  }) async {
+    final data = await _apiClient.put('/api/seasons/$seasonId', {
+      'name': name,
+      'start_date': startDate.toIso8601String().split('T')[0],
+      'end_date': endDate.toIso8601String().split('T')[0],
+      'matches_per_week_per_team': matchesPerWeekPerTeam,
+      'weeks_between_matches': weeksBetweenMatches,
+      'double_round_robin': doubleRoundRobin,
+      'allowed_weekdays': allowedWeekdays,
+    });
+    return Season.fromJson(data);
+  }
+
+  Future<void> deleteSeason(int seasonId) async {
+    await _apiClient.delete('/api/seasons/$seasonId');
   }
 
   /// Get standings. Set [archived] to true for archived data.

@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import '../../../design/index.dart';
 
-class LeagueAdminLeaguesHeaderCard extends StatelessWidget {
+class LeaguesHeaderCard extends StatelessWidget {
   final Widget leaguesContent;
 
-  const LeagueAdminLeaguesHeaderCard({
+  const LeaguesHeaderCard({
     super.key,
     required this.leaguesContent,
   });

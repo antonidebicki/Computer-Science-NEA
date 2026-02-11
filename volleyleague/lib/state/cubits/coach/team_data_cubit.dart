@@ -4,9 +4,9 @@ import '../../../services/repositories/league_repository.dart';
 import '../../../services/repositories/match_repository.dart';
 import '../../../services/repositories/team_repository.dart';
 import '../../../services/api_client.dart';
-import '../../../core/models/enums.dart';
 import '../../../core/models/season.dart';
 import '../../../core/models/team_member.dart';
+import '../../../core/models/match_data.dart';
 import 'team_data_state.dart';
 
 class TeamDataCubit extends Cubit<TeamDataState> {
@@ -138,7 +138,6 @@ class TeamDataCubit extends Cubit<TeamDataState> {
         for (final season in allSeasons) {
           final matches = await _matchRepository.getMatches(
             seasonId: season.seasonId,
-            status: GameState.scheduled.value,
           );
 
           final teamNames = leagueSeasonTeamNames[season.seasonId] ?? {};

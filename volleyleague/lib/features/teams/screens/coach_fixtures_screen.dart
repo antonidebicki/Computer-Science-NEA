@@ -5,9 +5,21 @@ import '../../../design/index.dart';
 import '../../../state/cubits/coach/team_data_cubit.dart';
 import '../../../state/cubits/coach/team_data_state.dart';
 import '../../../state/providers/theme_provider.dart';
+import '../../widgets/fixtures_widget.dart';
+import '../../../design/widgets/toggle.dart';
 
-class CoachFixturesScreen extends StatelessWidget {
+// this is technically the players screen when its done, so i need to add extra 'coaching' features to it
+// the only reason ive done it this way is that in the future i can add extra features without affecting the player, and also because the player
+// screen can have multiple teams and leagues
+class CoachFixturesScreen extends StatefulWidget {
   const CoachFixturesScreen({super.key});
+
+  @override
+  State<CoachFixturesScreen> createState() => _CoachFixturesScreenState();
+}
+
+class _CoachFixturesScreenState extends State<CoachFixturesScreen> {
+  bool _showPastFixtures = false;
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +40,7 @@ class CoachFixturesScreen extends StatelessWidget {
             CupertinoSliverNavigationBar(
               heroTag: 'fixtures_nav_bar',
               largeTitle: const Text('Fixtures'),
+              // also dont remove this automaticBackgroundVisibility (or any of them in the codebase) as it make the background ugly
               automaticBackgroundVisibility: false,
               backgroundColor: Colors.transparent,
               border: null,
@@ -79,6 +92,46 @@ class CoachFixturesScreen extends StatelessWidget {
                 }
 
                 if (state is TeamDataLoaded) {
+                  final now = DateTime.now();
+
+                  final futureFixtures = state.upcomingFixtures
+                      .where(
+                        (match) =>
+                            match.match.matchDatetime != null &&
+                            match.match.matchDatetime!.isAfter(now),
+                      )
+                      .toList();
+                  final pastFixtures = state.upcomingFixtures
+                      .where(
+                        (match) =>
+                            match.match.matchDatetime != null &&
+                            match.match.matchDatetime!.isBefore(now),
+                      )
+                      .toList();
+
+                  futureFixtures.sort((a, b) {
+                    if (a.match.matchDatetime == null ||
+                        b.match.matchDatetime == null) {
+                      return 0;
+                    }
+                    return a.match.matchDatetime!.compareTo(
+                      b.match.matchDatetime!,
+                    );
+                  });
+
+                  pastFixtures.sort((a, b) {
+                    if (a.match.matchDatetime == null ||
+                        b.match.matchDatetime == null) {
+                      return 0;
+                    }
+                    return b.match.matchDatetime!.compareTo(
+                      a.match.matchDatetime!,
+                    ); // Most recent first
+                  });
+
+                  final displayedFixtures =
+                      _showPastFixtures ? pastFixtures : futureFixtures;
+
                   return SliverPadding(
                     padding: const EdgeInsets.only(
                       left: Spacing.lg,
@@ -88,27 +141,37 @@ class CoachFixturesScreen extends StatelessWidget {
                     ),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
-                        if (state.upcomingFixtures.isEmpty)
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: Spacing.xl,
-                              ),
-                              child: Text(
-                                'No upcoming fixtures',
-                                style: AppTypography.callout.copyWith(
-                                  color: CupertinoColors.secondaryLabel
-                                      .resolveFrom(context),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: Spacing.lg),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(50),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(0x1F000000),
+                                  blurRadius: 8,
+                                  spreadRadius: 0,
+                                  offset: Offset(0, 2),
                                 ),
-                              ),
+                              ],
                             ),
-                          )
-                        else
-                          Text(
-                            'Upcoming Fixtures (${state.upcomingFixtures.length})',
-                            style: AppTypography.headline,
+                            child: LiquidGlassToggle(
+                              value: _showPastFixtures,
+                              onChanged: (value) {
+                                setState(() {
+                                  _showPastFixtures = value;
+                                });
+                              },
+                              activeLabel: 'Past (${pastFixtures.length})',
+                              inactiveLabel:
+                                  'Upcoming (${futureFixtures.length})',
+                            ),
                           ),
-                        const SizedBox(height: Spacing.xxxl),
+                        ),
+                        FixturesWidget(fixtures: displayedFixtures),
+                        // massive spacing at the bottom to allow the last fixture to be scrolled past
+                        // need to test this w different screen sizes
+                        SizedBox(height: Spacing.xxxl),
                       ]),
                     ),
                   );
