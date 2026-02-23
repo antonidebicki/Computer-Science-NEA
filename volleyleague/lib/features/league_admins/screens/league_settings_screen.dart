@@ -9,7 +9,7 @@ import '../../../services/repositories/invitation_repository.dart';
 import '../../../services/repositories/league_repository.dart';
 import '../../../services/repositories/match_repository.dart';
 import '../../../state/providers/theme_provider.dart';
-import '../widgets/league_invitations_section.dart';
+import '../widgets/league_invitations.dart';
 import '../widgets/league_overview_card.dart';
 import '../widgets/season_planner_card.dart';
 import '../widgets/season_status_card.dart';
@@ -18,10 +18,7 @@ import '../widgets/section_title.dart';
 class LeagueAdminLeagueSettingsScreen extends StatefulWidget {
   final League league;
 
-  const LeagueAdminLeagueSettingsScreen({
-    super.key,
-    required this.league,
-  });
+  const LeagueAdminLeagueSettingsScreen({super.key, required this.league});
 
   @override
   State<LeagueAdminLeagueSettingsScreen> createState() =>
@@ -42,7 +39,9 @@ class _LeagueAdminLeagueSettingsScreenState
   bool _isSeasonStarted = false;
   bool _isStartingSeason = false;
   String? _errorMessage;
+  String? _seasonPlannerErrorMessage;
   int? _seasonTeamCount;
+  List<Map<String, dynamic>> _seasonTeams = [];
   bool _isLoadingSeasonTeams = false;
   int _matchesPerWeekPerTeam = 1;
   int _weeksBetweenMatches = 1;
@@ -63,11 +62,52 @@ class _LeagueAdminLeagueSettingsScreenState
     await _loadPendingInvitations();
   }
 
+  Future<Season?> _createPlannedSeasonIfMissing({
+    required DateTime now,
+    Season? sourceSeason,
+  }) async {
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+
+    final sourceEnd = sourceSeason == null
+        ? null
+        : DateTime(
+            sourceSeason.endDate.year,
+            sourceSeason.endDate.month,
+            sourceSeason.endDate.day,
+          );
+
+    final startDate = sourceEnd == null
+        ? tomorrow
+        : sourceEnd.add(const Duration(days: 1)).isAfter(tomorrow)
+        ? sourceEnd.add(const Duration(days: 1))
+        : tomorrow;
+    final endDate = startDate.add(const Duration(days: 120));
+    final seasonName = startDate.year == endDate.year
+        ? '${startDate.year} season'
+        : '${startDate.year}/${endDate.year} season';
+
+    return _leagueRepository.createSeason(
+      leagueId: widget.league.leagueId,
+      name: seasonName,
+      startDate: startDate,
+      endDate: endDate,
+      matchesPerWeekPerTeam:
+          sourceSeason?.matchesPerWeekPerTeam ?? _matchesPerWeekPerTeam,
+      weeksBetweenMatches: sourceSeason?.weeksBetweenMatches ?? _weeksBetweenMatches,
+      doubleRoundRobin: sourceSeason?.doubleRoundRobin ?? _doubleRoundRobin,
+      allowedWeekdays: sourceSeason == null
+          ? List<int>.from(_allowedWeekdays)
+          : List<int>.from(sourceSeason.allowedWeekdays),
+    );
+  }
+
   Future<void> _loadCurrentSeason() async {
     setState(() => _isLoadingSeason = true);
     try {
-      final seasons =
-          await _leagueRepository.getSeasons(widget.league.leagueId);
+      final seasons = await _leagueRepository.getSeasons(
+        widget.league.leagueId,
+      );
       final now = DateTime.now();
       final active = seasons.where((season) {
         return !season.isArchived &&
@@ -76,10 +116,9 @@ class _LeagueAdminLeagueSettingsScreenState
       }).toList();
       final plannedSeasons = seasons.where((season) {
         return !season.isArchived && season.startDate.isAfter(now);
-      }).toList()
-        ..sort((a, b) => a.startDate.compareTo(b.startDate));
+      }).toList()..sort((a, b) => a.startDate.compareTo(b.startDate));
 
-      final planned = plannedSeasons.isNotEmpty ? plannedSeasons.first : null;
+      Season? planned = plannedSeasons.isNotEmpty ? plannedSeasons.first : null;
 
       Season? selected;
       if (active.isNotEmpty) {
@@ -92,10 +131,29 @@ class _LeagueAdminLeagueSettingsScreenState
         selected = nonArchived.isNotEmpty ? nonArchived.first : null;
       }
 
+      if (planned == null) {
+        try {
+          planned = await _createPlannedSeasonIfMissing(
+            now: now,
+            sourceSeason: selected,
+          );
+          selected = planned ?? selected;
+        } catch (e) {
+          setState(() {
+            _seasonPlannerErrorMessage =
+                'Unable to create planned season in the database: $e';
+            _errorMessage = _seasonPlannerErrorMessage;
+          });
+        }
+      }
+
       setState(() {
         _plannedSeason = planned;
         _currentSeason = selected;
         _applySeasonPlannerSettings(planned ?? selected);
+        _seasonPlannerErrorMessage = planned == null
+            ? 'No planned season found in the database.'
+            : null;
       });
       await _loadSeasonTeamsCount();
       await _loadSeasonStarted();
@@ -104,8 +162,12 @@ class _LeagueAdminLeagueSettingsScreenState
         _currentSeason = null;
         _isSeasonStarted = false;
         _seasonTeamCount = null;
+        _seasonTeams = [];
         _plannedSeason = null;
         _applySeasonPlannerSettings(null);
+        _seasonPlannerErrorMessage =
+            'Unable to access planned season data from the database.';
+        _errorMessage = _seasonPlannerErrorMessage;
       });
     } finally {
       if (mounted) {
@@ -149,9 +211,12 @@ class _LeagueAdminLeagueSettingsScreenState
   }
 
   Future<void> _loadSeasonTeamsCount() async {
-    final season = _currentSeason;
+    final season = _plannedSeason ?? _currentSeason;
     if (season == null) {
-      setState(() => _seasonTeamCount = null);
+      setState(() {
+        _seasonTeamCount = null;
+        _seasonTeams = [];
+      });
       return;
     }
 
@@ -159,10 +224,16 @@ class _LeagueAdminLeagueSettingsScreenState
     try {
       final teams = await _leagueRepository.getSeasonTeams(season.seasonId);
       if (!mounted) return;
-      setState(() => _seasonTeamCount = teams.length);
+      setState(() {
+        _seasonTeamCount = teams.length;
+        _seasonTeams = teams;
+      });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _seasonTeamCount = null);
+      setState(() {
+        _seasonTeamCount = null;
+        _seasonTeams = [];
+      });
     } finally {
       if (mounted) {
         setState(() => _isLoadingSeasonTeams = false);
@@ -173,8 +244,9 @@ class _LeagueAdminLeagueSettingsScreenState
   Future<void> _loadPendingInvitations() async {
     setState(() => _isLoadingInvitations = true);
     try {
-      final invitations = await _invitationRepository
-          .getSentLeagueInvitations(leagueId: widget.league.leagueId);
+      final invitations = await _invitationRepository.getSentLeagueInvitations(
+        leagueId: widget.league.leagueId,
+      );
       setState(() {
         _pendingInvitations = invitations;
         _errorMessage = null;
@@ -199,8 +271,9 @@ class _LeagueAdminLeagueSettingsScreenState
         seasonId: seasonId,
         invitationCode: invitationCode,
       );
-      final invitation =
-          await _invitationRepository.createLeagueInvitation(request);
+      final invitation = await _invitationRepository.createLeagueInvitation(
+        request,
+      );
       setState(() {
         _pendingInvitations.add(invitation);
         _errorMessage = null;
@@ -215,8 +288,9 @@ class _LeagueAdminLeagueSettingsScreenState
     try {
       await _invitationRepository.deleteLeagueInvitation(joinRequestId);
       setState(() {
-        _pendingInvitations
-            .removeWhere((inv) => inv.joinRequestId == joinRequestId);
+        _pendingInvitations.removeWhere(
+          (inv) => inv.joinRequestId == joinRequestId,
+        );
         _errorMessage = null;
       });
       _showSuccessMessage('Invitation cancelled');
@@ -226,7 +300,10 @@ class _LeagueAdminLeagueSettingsScreenState
   }
 
   void _showErrorMessage(String message) {
-    setState(() => _errorMessage = message);
+    setState(() {
+      _errorMessage = message;
+      _seasonPlannerErrorMessage = message;
+    });
   }
 
   void _showSuccessMessage(String message) {
@@ -308,48 +385,35 @@ class _LeagueAdminLeagueSettingsScreenState
     required List<int> allowedWeekdays,
   }) async {
     try {
-      final now = DateTime.now();
-      final planned = _plannedSeason;
-      final isEditingPlanned =
-          planned != null && planned.startDate.isAfter(now);
+      final editableSeason = _plannedSeason;
+      if (editableSeason == null) {
+        _showErrorMessage(
+          'Cannot save season because planned season data is not loaded from the database.',
+        );
+        return;
+      }
 
-      final season = isEditingPlanned
-          ? await _leagueRepository.updateSeason(
-              seasonId: planned.seasonId,
-              name: seasonName,
-              startDate: startDate,
-              endDate: endDate,
-              matchesPerWeekPerTeam: matchesPerWeekPerTeam,
-              weeksBetweenMatches: weeksBetweenMatches,
-              doubleRoundRobin: doubleRoundRobin,
-              allowedWeekdays: allowedWeekdays,
-            )
-          : await _leagueRepository.createSeason(
-              leagueId: widget.league.leagueId,
-              name: seasonName,
-              startDate: startDate,
-              endDate: endDate,
-              matchesPerWeekPerTeam: matchesPerWeekPerTeam,
-              weeksBetweenMatches: weeksBetweenMatches,
-              doubleRoundRobin: doubleRoundRobin,
-              allowedWeekdays: allowedWeekdays,
-            );
+      await _leagueRepository.updateSeason(
+        seasonId: editableSeason.seasonId,
+        name: seasonName,
+        startDate: startDate,
+        endDate: endDate,
+        matchesPerWeekPerTeam: matchesPerWeekPerTeam,
+        weeksBetweenMatches: weeksBetweenMatches,
+        doubleRoundRobin: doubleRoundRobin,
+        allowedWeekdays: allowedWeekdays,
+      );
+
       if (!mounted) return;
       setState(() {
-        _currentSeason = season;
-        _isSeasonStarted = false;
-        _seasonTeamCount = 0;
         _matchesPerWeekPerTeam = matchesPerWeekPerTeam;
         _weeksBetweenMatches = weeksBetweenMatches;
         _doubleRoundRobin = doubleRoundRobin;
         _allowedWeekdays = allowedWeekdays;
         _errorMessage = null;
-        _plannedSeason =
-            (!season.isArchived && season.startDate.isAfter(now))
-                ? season
-                : null;
+        _seasonPlannerErrorMessage = null;
       });
-      await _loadSeasonTeamsCount();
+      await _loadCurrentSeason();
       await _loadPendingInvitations();
       _showSuccessMessage('Season saved successfully.');
     } catch (e) {
@@ -441,6 +505,7 @@ class _LeagueAdminLeagueSettingsScreenState
         doubleRoundRobin: _doubleRoundRobin,
         allowedWeekdays: _allowedWeekdays,
       );
+
       if (!mounted) return;
       setState(() => _isSeasonStarted = true);
       _showSuccessMessage('Season started and fixtures generated.');
@@ -459,19 +524,22 @@ class _LeagueAdminLeagueSettingsScreenState
     final league = widget.league;
     final description = league.description?.trim();
     final rules = league.rules?.trim();
+    final seasonForManagement = _plannedSeason ?? _currentSeason;
     final now = DateTime.now();
     final season = _currentSeason;
-    final hasActiveSeason = season != null &&
+    final hasActiveSeason =
+        season != null &&
         now.isBefore(season.endDate.add(const Duration(days: 1)));
     final canCreateSeason = !(_isSeasonStarted && hasActiveSeason);
     final teamCount = _seasonTeamCount;
-    final canStartSeason = season != null &&
-      !_isSeasonStarted &&
-      !_isStartingSeason &&
-      !_isLoadingSeasonTeams &&
-      teamCount != null &&
-      teamCount >= 2 &&
-      teamCount <= 24;
+    final canStartSeason =
+        season != null &&
+        !_isSeasonStarted &&
+        !_isStartingSeason &&
+        !_isLoadingSeasonTeams &&
+        teamCount != null &&
+        teamCount >= 2 &&
+        teamCount <= 24;
 
     return CupertinoPageScaffold(
       child: Container(
@@ -508,7 +576,7 @@ class _LeagueAdminLeagueSettingsScreenState
                     description: description,
                     rules: rules,
                     isLoadingSeason: _isLoadingSeason,
-                    currentSeason: _currentSeason,
+                    currentSeason: seasonForManagement,
                     seasonStatus: SeasonStatusCard(
                       hasSeason: _currentSeason != null,
                       isSeasonStarted: _isSeasonStarted,
@@ -523,14 +591,37 @@ class _LeagueAdminLeagueSettingsScreenState
                   if (canCreateSeason) ...[
                     const SectionTitle(title: 'Season setup'),
                     const SizedBox(height: Spacing.sm),
-                    SeasonPlannerCard(
-                      plannedSeason: _plannedSeason,
-                      matchesPerWeekPerTeam: _matchesPerWeekPerTeam,
-                      weeksBetweenMatches: _weeksBetweenMatches,
-                      doubleRoundRobin: _doubleRoundRobin,
-                      allowedWeekdays: _allowedWeekdays,
-                      onSaveSeason: _handleSaveSeason,
-                    ),
+                    if (_seasonPlannerErrorMessage != null)
+                      AppGlassContainer(
+                        padding: const EdgeInsets.all(Spacing.lg),
+                        borderRadius: 20,
+                        child: Text(
+                          _seasonPlannerErrorMessage!,
+                          style: AppTypography.callout.copyWith(
+                            color: CupertinoColors.systemRed,
+                          ),
+                        ),
+                      )
+                    else if (_plannedSeason != null)
+                      SeasonPlannerCard(
+                        plannedSeason: _plannedSeason!,
+                        matchesPerWeekPerTeam: _matchesPerWeekPerTeam,
+                        weeksBetweenMatches: _weeksBetweenMatches,
+                        doubleRoundRobin: _doubleRoundRobin,
+                        allowedWeekdays: _allowedWeekdays,
+                        onSaveSeason: _handleSaveSeason,
+                      )
+                    else
+                      AppGlassContainer(
+                        padding: const EdgeInsets.all(Spacing.lg),
+                        borderRadius: 20,
+                        child: Text(
+                          'No planned season found in the database.',
+                          style: AppTypography.callout.copyWith(
+                            color: CupertinoColors.systemRed,
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: Spacing.lg),
                   ] else ...[
                     const SectionTitle(title: 'Season setup'),
@@ -551,7 +642,8 @@ class _LeagueAdminLeagueSettingsScreenState
                   const SizedBox(height: Spacing.sm),
                   LeagueInvitationsSection(
                     league: league,
-                    currentSeason: _currentSeason,
+                    currentSeason: seasonForManagement,
+                    seasonTeams: _seasonTeams,
                     errorMessage: _errorMessage,
                     isSeasonStarted: _isSeasonStarted,
                     isLoadingInvitations: _isLoadingInvitations,

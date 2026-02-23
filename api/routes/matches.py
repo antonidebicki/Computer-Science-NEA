@@ -151,6 +151,53 @@ async def create_set(
 ) -> SetOut:
     """Create a set record for a match"""
     pool = request.app.state.pool
+
+    if payload.home_team_score < 0 or payload.away_team_score < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Set scores cannot be negative",
+        )
+
+    if payload.home_team_score == payload.away_team_score:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Set scores cannot end in a tie",
+        )
+
+    winning_score = max(payload.home_team_score, payload.away_team_score)
+    losing_score = min(payload.home_team_score, payload.away_team_score)
+    minimum_winning_score = 15 if payload.set_number == 5 else 25
+
+    if winning_score < minimum_winning_score:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Set {payload.set_number} winner must reach at least {minimum_winning_score} points",
+        )
+
+    if winning_score - losing_score < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Set {payload.set_number} must be won by at least 2 points",
+        )
+
+    if winning_score > minimum_winning_score and losing_score < minimum_winning_score - 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Invalid set {payload.set_number} score. Scores above {minimum_winning_score} "
+                f"are only valid after deuce."
+            ),
+        )
+
+    if winning_score > minimum_winning_score and winning_score - losing_score != 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Invalid set {payload.set_number} score. Once above {minimum_winning_score}, "
+                "the set must finish immediately with a 2-point lead."
+            ),
+        )
+
     async with pool.acquire() as connection:
         try:
             row = await connection.fetchrow(

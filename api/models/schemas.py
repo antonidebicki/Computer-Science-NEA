@@ -78,7 +78,7 @@ class TeamOut(BaseModel):
   name: str
   created_by_user_id: int
   logo_url: Optional[str]
-    home_ground: Optional[str]
+  home_ground: Optional[str]
   created_at: Optional[datetime]
 
 
@@ -86,7 +86,7 @@ class TeamCreate(BaseModel):
   name: Annotated[str, constr(strip_whitespace=True, min_length=1)]
   created_by_user_id: int
   logo_url: Optional[Annotated[str, constr(strip_whitespace=True, min_length=1)]] = None
-    home_ground: Optional[Annotated[str, constr(strip_whitespace=True, min_length=1)]] = None
+  home_ground: Optional[Annotated[str, constr(strip_whitespace=True, min_length=1)]] = None
 
 
 class TeamUpdate(BaseModel):

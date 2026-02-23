@@ -5,11 +5,9 @@ import 'fixture_card.dart';
 
 class FixturesWidget extends StatelessWidget {
   final List<MatchData> fixtures;
+  final ValueChanged<MatchData>? onFixtureTap;
 
-  const FixturesWidget({
-    super.key,
-    required this.fixtures,
-  });
+  const FixturesWidget({super.key, required this.fixtures, this.onFixtureTap});
 
   @override
   Widget build(BuildContext context) {
@@ -27,18 +25,40 @@ class FixturesWidget extends StatelessWidget {
                 padding: EdgeInsets.only(
                   bottom: index < fixtures.length - 1 ? Spacing.lg : 0,
                 ),
-                child: FixtureCard(
-                  homeTeam: fixture.homeTeamName,
-                  awayTeam: fixture.awayTeamName,
-                  date: fixture.match.matchDatetime ?? DateTime.now(),
-                    venue: fixture.match.venue,
-                  ),
-                  );
-                }),
-                ],
-              ),
+                child: onFixtureTap == null
+                    ? FixtureCard(
+                        homeTeam: fixture.homeTeamName,
+                        awayTeam: fixture.awayTeamName,
+                        date: fixture.match.matchDatetime ?? DateTime.now(),
+                        venue: fixture.match.venue,
+                        homeSetsWon: fixture.match.homeSetsWon,
+                        awaySetsWon: fixture.match.awaySetsWon,
+                        showScore:
+                            fixture.match.status.value == 'FINISHED' ||
+                            fixture.match.status.value == 'PROCESSED',
+                      )
+                    : CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () => onFixtureTap!(fixture),
+                        child: FixtureCard(
+                          homeTeam: fixture.homeTeamName,
+                          awayTeam: fixture.awayTeamName,
+                          date: fixture.match.matchDatetime ?? DateTime.now(),
+                          venue: fixture.match.venue,
+                          homeSetsWon: fixture.match.homeSetsWon,
+                          awaySetsWon: fixture.match.awaySetsWon,
+                          showScore:
+                              fixture.match.status.value == 'FINISHED' ||
+                              fixture.match.status.value == 'PROCESSED',
+                          isClickable: true,
+                        ),
+                      ),
               );
-            }
+            }),
+        ],
+      ),
+    );
+  }
 
   Widget _buildNoFixtures() {
     return Center(
@@ -46,10 +66,7 @@ class FixturesWidget extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: Spacing.xl),
         child: Column(
           children: [
-            AppIcons.match(
-              fontSize: 40,
-              color: CupertinoColors.systemGrey,
-            ),
+            AppIcons.match(fontSize: 40, color: CupertinoColors.systemGrey),
             const SizedBox(height: Spacing.md),
             Text(
               'No upcoming fixtures',

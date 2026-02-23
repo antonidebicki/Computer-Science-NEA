@@ -5,6 +5,17 @@ import 'package:flutter_sficon/flutter_sficon.dart';
 class AppIcons {
   AppIcons._();
 
+  static Widget calendar({
+    double fontSize = 24,
+    Color? color,
+    FontWeight? fontWeight,
+  }) => SFIcon(
+    SFIcons.sf_calendar,
+    fontSize: fontSize,
+    color: color,
+    fontWeight: fontWeight,
+  );
+
   static Widget home({
     double fontSize = 24,
     Color? color,

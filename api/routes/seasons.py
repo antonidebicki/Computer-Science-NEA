@@ -48,6 +48,25 @@ async def get_season(request: Request, season_id: int, user: dict = Depends(Auth
 async def create_season(request: Request, payload: SeasonCreate, user: dict = Depends(AuthUtils.require_role(["ADMIN"]))) -> SeasonOut:
     pool = request.app.state.pool
     async with pool.acquire() as connection:
+        existing_planned = await connection.fetchrow(
+            """
+            SELECT season_id
+            FROM "Seasons"
+            WHERE league_id = $1
+              AND is_archived = FALSE
+              AND start_date > CURRENT_DATE
+            ORDER BY start_date ASC
+            LIMIT 1;
+            """,
+            payload.league_id,
+        )
+
+        if existing_planned:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A planned season already exists for this league. Update the existing planned season instead.",
+            )
+
         try:
             row = await connection.fetchrow(
                 """
@@ -433,27 +452,31 @@ async def get_season_standings(
                 """
                 SELECT 
                     ls.standing_id,
-                    ls.season_id,
-                    ls.team_id,
+                    st.season_id,
+                    st.team_id,
                     t.name as team_name,
-                    ls.matches_played,
-                    ls.wins,
-                    ls.losses,
-                    ls.sets_won,
-                    ls.sets_lost,
-                    (ls.sets_won - ls.sets_lost) as set_diff,
-                    ls.points_won,
-                    ls.points_lost,
-                    (ls.points_won - ls.points_lost) as point_diff,
-                    ls.league_points,
+                    COALESCE(ls.matches_played, 0) as matches_played,
+                    COALESCE(ls.wins, 0) as wins,
+                    COALESCE(ls.losses, 0) as losses,
+                    COALESCE(ls.sets_won, 0) as sets_won,
+                    COALESCE(ls.sets_lost, 0) as sets_lost,
+                    (COALESCE(ls.sets_won, 0) - COALESCE(ls.sets_lost, 0)) as set_diff,
+                    COALESCE(ls.points_won, 0) as points_won,
+                    COALESCE(ls.points_lost, 0) as points_lost,
+                    (COALESCE(ls.points_won, 0) - COALESCE(ls.points_lost, 0)) as point_diff,
+                    COALESCE(ls.league_points, 0) as league_points,
                     ROW_NUMBER() OVER (
-                        ORDER BY ls.league_points DESC,
-                        (ls.sets_won - ls.sets_lost) DESC,
-                        (ls.points_won - ls.points_lost) DESC
+                        ORDER BY COALESCE(ls.league_points, 0) DESC,
+                        (COALESCE(ls.sets_won, 0) - COALESCE(ls.sets_lost, 0)) DESC,
+                        (COALESCE(ls.points_won, 0) - COALESCE(ls.points_lost, 0)) DESC,
+                        t.name ASC
                     ) as position
-                FROM "LeagueStandings" ls
-                JOIN "Teams" t ON ls.team_id = t.team_id
-                WHERE ls.season_id = $1
+                FROM "SeasonTeams" st
+                JOIN "Teams" t ON st.team_id = t.team_id
+                LEFT JOIN "LeagueStandings" ls
+                    ON ls.season_id = st.season_id
+                    AND ls.team_id = st.team_id
+                WHERE st.season_id = $1
                 ORDER BY position ASC;
                 """,
                 season_id

@@ -5,10 +5,7 @@ import '../../../design/index.dart';
 class SeasonInfo extends StatelessWidget {
   final Season? season;
 
-  const SeasonInfo({
-    super.key,
-    required this.season,
-  });
+  const SeasonInfo({super.key, required this.season});
 
   @override
   Widget build(BuildContext context) {

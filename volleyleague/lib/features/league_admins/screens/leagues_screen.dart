@@ -23,6 +23,11 @@ class _LeagueAdminLeaguesScreenState extends State<LeagueAdminLeaguesScreen> {
   List<League> _leagues = [];
   bool _isLoadingLeagues = false;
 
+  void _setStateIfMounted(VoidCallback fn) {
+    if (!mounted) return;
+    setState(fn);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -31,21 +36,18 @@ class _LeagueAdminLeaguesScreenState extends State<LeagueAdminLeaguesScreen> {
   }
 
   Future<void> _loadLeagues() async {
-    setState(() => _isLoadingLeagues = true);
+    _setStateIfMounted(() => _isLoadingLeagues = true);
     try {
       final leagues = await _leagueRepository.getLeagues();
-      setState(() {
+      _setStateIfMounted(() {
         _leagues = leagues;
       });
     } catch (e) {
-      setState(() => _errorMessage = 'Failed to load leagues: $e');
+      _setStateIfMounted(() => _errorMessage = 'Failed to load leagues: $e');
     } finally {
-      if (mounted) {
-        setState(() => _isLoadingLeagues = false);
-      }
+      _setStateIfMounted(() => _isLoadingLeagues = false);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -103,12 +105,12 @@ class _LeagueAdminLeaguesScreenState extends State<LeagueAdminLeaguesScreen> {
                     ),
                   NewLeague(
                     onLeagueCreated: (league) async {
-                      setState(() {
+                      _setStateIfMounted(() {
                         _leagues = [..._leagues, league];
                       });
                     },
                   ),
-                  const SizedBox(height: Spacing.xxxl*3),
+                  const SizedBox(height: Spacing.xxxl * 3),
                 ]),
               ),
             ),
@@ -147,9 +149,8 @@ class _LeagueAdminLeaguesScreenState extends State<LeagueAdminLeaguesScreen> {
               onPressed: () {
                 Navigator.of(context).push(
                   CupertinoPageRoute(
-                    builder: (_) => LeagueAdminLeagueSettingsScreen(
-                      league: league,
-                    ),
+                    builder: (_) =>
+                        LeagueAdminLeagueSettingsScreen(league: league),
                   ),
                 );
               },

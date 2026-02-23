@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 # Load environment variables from secrets/.env
 env_path = Path(__file__).parent.parent.parent / "secrets" / ".env"
 if env_path.exists():
-    print("📄 Loading environment variables from secrets/.env")
+    print("Loading environment variables from secrets/.env")
     with open(env_path) as f:
         for line in f:
             line = line.strip()
@@ -35,7 +35,7 @@ if env_path.exists():
                 key, value = line.split('=', 1)
                 os.environ[key] = value
 else:
-    print("⚠️  Warning: secrets/.env not found")
+    print("Warning: secrets/.env not found")
 
 
 def _pg_dsn() -> dict:
@@ -59,7 +59,7 @@ async def run_seed_data():
     # Read the SQL file
     sql_file = Path(__file__).parent / "seed_data.sql"
     if not sql_file.exists():
-        print(f"❌ Error: SQL file not found at {sql_file}")
+        print(f"Error: SQL file not found at {sql_file}")
         return False
     
     print(f"📖 Reading SQL file: {sql_file.name}")
@@ -85,14 +85,14 @@ async def run_seed_data():
             await connection.execute(sql_content)
             
             print("-" * 70)
-            print("✅ Seed data executed successfully\n")
+            print("Seed data executed successfully\n")
             
             # Run verification queries
-            print("🔍 Verifying data insertion...")
+            print("Verifying data insertion...")
             print("-" * 70)
             
             # Count users by role
-            print("\n📊 Users by Role:")
+            print("\nUsers by Role:")
             role_counts = await connection.fetch(
                 'SELECT role, COUNT(*) as count FROM "Users" GROUP BY role ORDER BY role'
             )
@@ -103,12 +103,12 @@ async def run_seed_data():
             leagues = await connection.fetch(
                 'SELECT league_id, name FROM "Leagues" ORDER BY league_id'
             )
-            print(f"\n📊 Leagues: {len(leagues)}")
+            print(f"\nLeagues: {len(leagues)}")
             for league in leagues:
                 print(f"   [{league['league_id']}] {league['name']}")
             
             # Count teams per league
-            print(f"\n📊 Teams per League:")
+            print(f"\nTeams per League:")
             for league in leagues:
                 teams = await connection.fetch(
                     'SELECT COUNT(*) as count FROM "SeasonTeams" st '
@@ -122,7 +122,7 @@ async def run_seed_data():
             seasons = await connection.fetch(
                 'SELECT season_id, name FROM "Seasons" ORDER BY season_id'
             )
-            print(f"\n📊 Seasons: {len(seasons)}")
+            print(f"\nSeasons: {len(seasons)}")
             for season in seasons:
                 print(f"   [{season['season_id']}] {season['name']}")
             
@@ -134,7 +134,7 @@ async def run_seed_data():
                 'GROUP BY t.team_id, t.name '
                 'ORDER BY t.team_id'
             )
-            print(f"\n📊 Team Members:")
+            print(f"\nTeam Members:")
             for row in member_counts:
                 print(f"   {row['team_name']:30} : {row['member_count']} members")
             
@@ -143,9 +143,9 @@ async def run_seed_data():
         await pool.close()
         
         print("\n" + "="*70)
-        print("✅ SEED DATA LOADED SUCCESSFULLY")
+        print("SEED DATA LOADED SUCCESSFULLY")
         print("="*70)
-        print("\n📝 Summary:")
+        print("\nSummary:")
         print(f"   • 1 Admin user (league_admin)")
         print(f"   • 2 Leagues (South East, North West)")
         print(f"   • 12 Teams (6 per league)")
@@ -156,7 +156,7 @@ async def run_seed_data():
         print(f"   • All teams assigned to seasons")
         print(f"   • All members assigned to teams\n")
         
-        print("🔐 Test Login Credentials:")
+        print("Test Login Credentials:")
         print("   Admin:   league_admin / AdminPass123")
         print("   Coach:   sarah_johnson / AdminPass123")
         print("   Player:  emma_davies / AdminPass123")
@@ -165,10 +165,10 @@ async def run_seed_data():
         return True
         
     except asyncpg.PostgresError as e:
-        print(f"\n❌ Database Error: {e}")
+        print(f"\nDatabase Error: {e}")
         return False
     except Exception as e:
-        print(f"\n❌ Unexpected Error: {e}")
+        print(f"\nUnexpected Error: {e}")
         import traceback
         traceback.print_exc()
         return False

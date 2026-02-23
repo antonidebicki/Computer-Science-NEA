@@ -126,7 +126,7 @@ class _StandingsScreenState extends State<StandingsScreen> {
           slivers: [
             CupertinoSliverRefreshControl(
               onRefresh: () async {
-                context.read<PlayerDataCubit>().refresh();
+                await context.read<PlayerDataCubit>().refresh();
               },
             ),
             CupertinoSliverNavigationBar(
@@ -139,23 +139,67 @@ class _StandingsScreenState extends State<StandingsScreen> {
             BlocBuilder<PlayerDataCubit, PlayerDataState>(
               builder: (context, state) {
                 if (state is PlayerDataLoading) {
-                  return const SliverFillRemaining(
-                    child: Center(
-                      child: CupertinoActivityIndicator(radius: 16),
+                  return SliverPadding(
+                    padding: EdgeInsets.only(
+                      left: Spacing.lg,
+                      right: Spacing.lg,
+                      top: Spacing.lg,
+                      bottom: 100,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        AppGlassContainer(
+                          padding: EdgeInsets.all(Spacing.xl),
+                          child: Center(
+                            child: CupertinoActivityIndicator(radius: 16),
+                          ),
+                        ),
+                      ]),
                     ),
                   );
                 }
 
                 if (state is PlayerDataError) {
-                  return SliverFillRemaining(
-                    child: Center(child: Text(state.message)),
+                  return SliverPadding(
+                    padding: const EdgeInsets.only(
+                      left: Spacing.lg,
+                      right: Spacing.lg,
+                      top: Spacing.lg,
+                      bottom: 100,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        AppGlassContainer(
+                          padding: const EdgeInsets.all(Spacing.lg),
+                          child: Text(
+                            state.message,
+                            style: AppTypography.callout.copyWith(
+                              color: CupertinoColors.systemRed,
+                            ),
+                          ),
+                        ),
+                      ]),
+                    ),
                   );
                 }
 
                 if (state is PlayerDataLoaded) {
                   if (state.leagueStandings.isEmpty) {
-                    return const SliverFillRemaining(
-                      child: Center(child: Text('No league data available')),
+                    return SliverPadding(
+                      padding: EdgeInsets.only(
+                        left: Spacing.lg,
+                        right: Spacing.lg,
+                        top: Spacing.lg,
+                        bottom: 100,
+                      ),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          AppGlassContainer(
+                            padding: EdgeInsets.all(Spacing.lg),
+                            child: Text('No league data available'),
+                          ),
+                        ]),
+                      ),
                     );
                   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../../../core/models/invitation.dart';
 import '../../../design/index.dart';
 
 class LeagueInvitationInputWidget extends StatefulWidget {
@@ -6,6 +7,8 @@ class LeagueInvitationInputWidget extends StatefulWidget {
   final int? seasonId;
   final String? leagueName;
   final String? seasonName;
+  final List<LeagueJoinRequest> invitedTeams;
+  final List<Map<String, dynamic>> seasonTeams;
   final Future<void> Function({
     required int leagueId,
     required int seasonId,
@@ -18,6 +21,8 @@ class LeagueInvitationInputWidget extends StatefulWidget {
     required this.seasonId,
     required this.leagueName,
     required this.seasonName,
+    required this.invitedTeams,
+    this.seasonTeams = const [],
     required this.onSendInvitation,
   });
 
@@ -85,6 +90,34 @@ class _LeagueInvitationInputWidgetState
 
   @override
   Widget build(BuildContext context) {
+    final invitedTeamsForSeason = widget.invitedTeams
+        .where((inv) {
+          final status = inv.status.toUpperCase();
+          final isInvited = status == 'PENDING' || status == 'ACCEPTED';
+          if (!isInvited) {
+            return false;
+          }
+
+          if (widget.seasonId == null) {
+            return true;
+          }
+
+          return inv.seasonId == widget.seasonId;
+        })
+        .toList();
+
+    final displayedTeams = widget.seasonTeams.isNotEmpty
+        ? widget.seasonTeams
+            .map(
+              (team) =>
+                  (team['team_name'] as String?) ??
+                  'Team ${team['team_id']}',
+            )
+            .toList()
+        : invitedTeamsForSeason
+            .map((team) => team.teamName ?? 'Team ${team.teamId}')
+            .toList();
+
     return AppGlassContainer(
       padding: const EdgeInsets.all(Spacing.lg),
       borderRadius: 20,
@@ -109,26 +142,58 @@ class _LeagueInvitationInputWidgetState
           const SizedBox(height: Spacing.xs),
           _buildInfoRow('Season', widget.seasonName ?? 'No active season'),
           const SizedBox(height: Spacing.lg),
-          _buildTextField(
+          _buildTextFieldWithIcon(
             controller: _invitationCodeController,
             label: 'Team Invitation Code',
           ),
-          const SizedBox(height: Spacing.lg),
-          SizedBox(
-            width: double.infinity,
-            child: CupertinoButton.filled(
-              onPressed: _isLoading ? null : _handleSend,
-              child: _isLoading
-                  ? const CupertinoActivityIndicator(radius: 8)
-                  : const Text('Send League Invitation'),
+          if (displayedTeams.isNotEmpty) ...[
+            const SizedBox(height: Spacing.md),
+            Text(
+              widget.seasonTeams.isNotEmpty
+                  ? 'Teams in this season (${displayedTeams.length})'
+                  : 'Teams invited to this season (${displayedTeams.length})',
+              style: AppTypography.caption.copyWith(
+                color: CupertinoColors.secondaryLabel,
+              ),
             ),
-          ),
+            const SizedBox(height: Spacing.sm),
+            ListView.separated(
+              padding: EdgeInsets.symmetric(vertical: Spacing.sm),
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: displayedTeams.length,
+              separatorBuilder: (_, __) => const SizedBox(height: Spacing.sm),
+              itemBuilder: (context, index) {
+                final teamName = displayedTeams[index];
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Spacing.md,
+                    vertical: Spacing.sm,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: CupertinoColors.systemGreen.withOpacity(0.3),
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    color: CupertinoColors.systemGreen.withOpacity(0.05),
+                  ),
+                  child: Text(
+                    teamName,
+                    style: AppTypography.body.copyWith(
+                      color: CupertinoColors.label,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildTextField({
+  Widget _buildTextFieldWithIcon({
     required TextEditingController controller,
     required String label,
   }) {
@@ -143,17 +208,45 @@ class _LeagueInvitationInputWidgetState
         ),
         const SizedBox(height: Spacing.xs),
         AppGlassContainer(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.md,
-            vertical: Spacing.sm,
-          ),
+          padding: EdgeInsets.zero,
           borderRadius: 12,
-          child: CupertinoTextField(
-            controller: controller,
-            placeholder: label,
-            keyboardType: TextInputType.number,
-            decoration: const BoxDecoration(),
-            style: AppTypography.body,
+          child: Row(
+            children: [
+              Expanded(
+                child: CupertinoTextField(
+                  controller: controller,
+                  placeholder: label,
+                  keyboardType: TextInputType.number,
+                  decoration: const BoxDecoration(),
+                  style: AppTypography.body,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Spacing.md,
+                    vertical: Spacing.sm,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: Spacing.xs),
+                child: CupertinoButton(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Spacing.sm,
+                    vertical: Spacing.xs,
+                  ),
+                  onPressed: _isLoading ? null : _handleSend,
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CupertinoActivityIndicator(radius: 8),
+                        )
+                      : const Icon(
+                          CupertinoIcons.paperplane_fill,
+                          size: 18,
+                          color: CupertinoColors.activeBlue,
+                        ),
+                ),
+              ),
+            ],
           ),
         ),
       ],

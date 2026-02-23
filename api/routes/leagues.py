@@ -120,6 +120,25 @@ async def create_league_season(request: Request, league_id: int, payload: Season
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"League ID in payload ({payload.league_id}) does not match URL parameter ({league_id})"
             )
+
+        existing_planned = await connection.fetchrow(
+            """
+            SELECT season_id
+            FROM "Seasons"
+            WHERE league_id = $1
+              AND is_archived = FALSE
+              AND start_date > CURRENT_DATE
+            ORDER BY start_date ASC
+            LIMIT 1;
+            """,
+            league_id,
+        )
+
+        if existing_planned:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A planned season already exists for this league. Update the existing planned season instead.",
+            )
         
         try:
             row = await connection.fetchrow(

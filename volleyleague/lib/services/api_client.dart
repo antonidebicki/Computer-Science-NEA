@@ -5,14 +5,12 @@ import '../core/exceptions.dart';
 import '../core/constants.dart';
 
 /// HTTP client for my backend api
-/// 
+///
 /// Automatically handles token refresh when access token is expired.
 class ApiClient {
-  ApiClient({
-    String? baseUrl,
-    AuthService? authService,
-  }) : baseUrl = baseUrl ?? AppConstants.apiBaseUrl,
-       _authService = authService ?? AuthService();
+  ApiClient({String? baseUrl, AuthService? authService})
+    : baseUrl = baseUrl ?? AppConstants.apiBaseUrl,
+      _authService = authService ?? AuthService();
 
   final String baseUrl;
   final AuthService _authService;
@@ -28,9 +26,7 @@ class ApiClient {
   }
 
   Map<String, String> _getHeaders() {
-    final headers = {
-      'Content-Type': 'application/json',
-    };
+    final headers = {'Content-Type': 'application/json'};
     if (_authToken != null) {
       headers['Authorization'] = 'Bearer $_authToken';
     }
@@ -72,7 +68,13 @@ class ApiClient {
     try {
       final data = json.decode(responseBody);
       if (data is Map && data.containsKey('detail')) {
-        return data['detail'] as String;
+        final detail = data['detail'];
+        if (detail is String && detail.trim().isNotEmpty) {
+          return detail;
+        }
+        if (detail != null) {
+          return detail.toString();
+        }
       }
       return responseBody;
     } catch (e) {
@@ -192,9 +194,15 @@ class ApiClient {
   }
 
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
-    final skipToken = endpoint.startsWith('/api/login') || 
-                      endpoint.startsWith('/api/auth/register');
-    return _makeRequest('POST', endpoint, body: body, skipTokenCheck: skipToken);
+    final skipToken =
+        endpoint.startsWith('/api/login') ||
+        endpoint.startsWith('/api/auth/register');
+    return _makeRequest(
+      'POST',
+      endpoint,
+      body: body,
+      skipTokenCheck: skipToken,
+    );
   }
 
   Future<dynamic> put(String endpoint, Map<String, dynamic> body) async {

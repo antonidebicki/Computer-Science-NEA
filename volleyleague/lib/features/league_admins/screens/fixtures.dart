@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import '../../../core/models/league.dart';
+import '../../../core/models/match.dart';
 import '../../../core/models/match_data.dart';
 import '../../../core/models/season.dart';
+import '../../../core/models/enums.dart';
 import 'package:provider/provider.dart';
 import '../../../design/index.dart';
 import '../../../design/widgets/toggle.dart';
@@ -11,9 +13,12 @@ import '../../../services/repositories/league_repository.dart';
 import '../../../services/repositories/match_repository.dart';
 import '../../../state/providers/theme_provider.dart';
 import '../../widgets/fixtures_widget.dart';
+import 'match_score_entry_screen.dart';
 
 class LeagueAdminFixturesScreen extends StatefulWidget {
-  const LeagueAdminFixturesScreen({super.key});
+  final bool isActive;
+
+  const LeagueAdminFixturesScreen({super.key, this.isActive = false});
 
   @override
   State<LeagueAdminFixturesScreen> createState() =>
@@ -21,6 +26,7 @@ class LeagueAdminFixturesScreen extends StatefulWidget {
 }
 
 class _LeagueAdminFixturesScreenState extends State<LeagueAdminFixturesScreen> {
+  late final ApiClient _apiClient;
   late final LeagueRepository _leagueRepository;
   late final MatchRepository _matchRepository;
   late final AuthService _authService;
@@ -42,11 +48,24 @@ class _LeagueAdminFixturesScreenState extends State<LeagueAdminFixturesScreen> {
   @override
   void initState() {
     super.initState();
-    final apiClient = ApiClient();
-    _leagueRepository = LeagueRepository(apiClient);
-    _matchRepository = MatchRepository(apiClient);
+    _apiClient = ApiClient();
+    _leagueRepository = LeagueRepository(_apiClient);
+    _matchRepository = MatchRepository(_apiClient);
     _authService = AuthService();
     _loadAdminLeagues();
+  }
+
+  @override
+  void didUpdateWidget(covariant LeagueAdminFixturesScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _loadAdminLeagues();
+    }
+  }
+
+  void _setStateIfMounted(VoidCallback fn) {
+    if (!mounted) return;
+    setState(fn);
   }
 
   Future<void> _refreshCurrent() async {
@@ -60,7 +79,7 @@ class _LeagueAdminFixturesScreenState extends State<LeagueAdminFixturesScreen> {
   }
 
   Future<void> _loadAdminLeagues() async {
-    setState(() {
+    _setStateIfMounted(() {
       _loadingLeagues = true;
       _errorMessage = null;
     });
@@ -68,7 +87,7 @@ class _LeagueAdminFixturesScreenState extends State<LeagueAdminFixturesScreen> {
     try {
       final currentUserId = await _authService.getUserId();
       if (currentUserId == null) {
-        setState(() {
+        _setStateIfMounted(() {
           _adminLeagues = [];
           _seasons = [];
           _fixtures = [];
@@ -82,7 +101,7 @@ class _LeagueAdminFixturesScreenState extends State<LeagueAdminFixturesScreen> {
           .where((league) => league.adminUserId == currentUserId)
           .toList();
 
-      setState(() {
+      _setStateIfMounted(() {
         _adminLeagues = adminLeagues;
         _selectedLeagueIndex = 0;
         _selectedSeasonIndex = 0;
@@ -94,20 +113,18 @@ class _LeagueAdminFixturesScreenState extends State<LeagueAdminFixturesScreen> {
         await _loadSeasonsForLeague(adminLeagues.first.leagueId);
       }
     } catch (e) {
-      setState(() {
+      _setStateIfMounted(() {
         _errorMessage = 'Failed to load leagues: $e';
       });
     } finally {
-      if (mounted) {
-        setState(() {
-          _loadingLeagues = false;
-        });
-      }
+      _setStateIfMounted(() {
+        _loadingLeagues = false;
+      });
     }
   }
 
   Future<void> _loadSeasonsForLeague(int leagueId) async {
-    setState(() {
+    _setStateIfMounted(() {
       _loadingSeasons = true;
       _errorMessage = null;
       _seasons = [];
@@ -117,76 +134,193 @@ class _LeagueAdminFixturesScreenState extends State<LeagueAdminFixturesScreen> {
 
     try {
       final seasons = await _leagueRepository.getSeasons(leagueId);
-      seasons.sort((a, b) => b.startDate.compareTo(a.startDate));
+      final availableSeasons = seasons.where((season) {
+        return !season.isArchived;
+      }).toList()..sort((a, b) => b.startDate.compareTo(a.startDate));
 
-      setState(() {
-        _seasons = seasons;
+      _setStateIfMounted(() {
+        _seasons = availableSeasons;
       });
 
-      final selectedSeason = _pickCurrentSeason(seasons);
+      final selectedSeason = _pickCurrentSeason(availableSeasons);
       if (selectedSeason != null) {
-        final seasonIndex = seasons
+        final seasonIndex = availableSeasons
             .indexOf(selectedSeason)
-            .clamp(0, seasons.length - 1);
-        setState(() {
+            .clamp(0, availableSeasons.length - 1);
+        _setStateIfMounted(() {
           _selectedSeasonIndex = seasonIndex;
         });
         await _loadFixturesForSeason(selectedSeason.seasonId);
+      } else {
+        _setStateIfMounted(() {
+          _fixtures = [];
+        });
       }
     } catch (e) {
-      setState(() {
+      _setStateIfMounted(() {
         _errorMessage = 'Failed to load seasons: $e';
       });
     } finally {
-      if (mounted) {
-        setState(() {
-          _loadingSeasons = false;
-        });
-      }
+      _setStateIfMounted(() {
+        _loadingSeasons = false;
+      });
     }
   }
 
   Future<void> _loadFixturesForSeason(int seasonId) async {
-    setState(() {
+    _setStateIfMounted(() {
       _loadingFixtures = true;
       _errorMessage = null;
     });
 
     try {
       final seasonTeams = await _leagueRepository.getSeasonTeams(seasonId);
-      final teamNames = <int, String>{
-        for (final teamJson in seasonTeams)
-          teamJson['team_id'] as int: teamJson['name'] as String,
-      };
+      final teamNames = <int, String>{};
+      for (final teamJson in seasonTeams) {
+        final rawTeamId = teamJson['team_id'] ?? teamJson['id'];
+        final teamId = rawTeamId is int
+            ? rawTeamId
+            : int.tryParse(rawTeamId?.toString() ?? '');
 
-      final matches = await _matchRepository.getMatches(seasonId: seasonId);
-      final fixtures = matches
-          .map(
-            (match) => MatchData(
-              match: match,
-              homeTeamName:
-                  teamNames[match.homeTeamId] ?? 'Team ${match.homeTeamId}',
-              awayTeamName:
-                  teamNames[match.awayTeamId] ?? 'Team ${match.awayTeamId}',
-            ),
-          )
-          .toList();
+        if (teamId == null) {
+          continue;
+        }
 
-      setState(() {
+        final teamName = _extractTeamName(teamJson, fallbackId: teamId);
+        teamNames[teamId] = teamName;
+      }
+
+      List<MatchData> fixtures;
+      try {
+        final matches = await _matchRepository.getMatches(seasonId: seasonId);
+        fixtures = matches
+            .map(
+              (match) => MatchData(
+                match: match,
+                homeTeamName:
+                    teamNames[match.homeTeamId] ?? 'Team ${match.homeTeamId}',
+                awayTeamName:
+                    teamNames[match.awayTeamId] ?? 'Team ${match.awayTeamId}',
+              ),
+            )
+            .toList();
+      } catch (_) {
+        final rawData = await _apiClient.get(
+          '/api/matches?season_id=$seasonId',
+        );
+        fixtures = _parseFixturesFromRaw(rawData, seasonId, teamNames);
+      }
+
+      _setStateIfMounted(() {
         _fixtures = fixtures;
       });
     } catch (e) {
-      setState(() {
+      _setStateIfMounted(() {
         _errorMessage = 'Failed to load fixtures: $e';
         _fixtures = [];
       });
     } finally {
-      if (mounted) {
-        setState(() {
-          _loadingFixtures = false;
-        });
+      _setStateIfMounted(() {
+        _loadingFixtures = false;
+      });
+    }
+  }
+
+  String _extractTeamName(
+    Map<String, dynamic> teamJson, {
+    required int fallbackId,
+  }) {
+    final candidates = <dynamic>[
+      teamJson['name'],
+      teamJson['team_name'],
+      teamJson['display_name'],
+      teamJson['title'],
+    ];
+
+    for (final candidate in candidates) {
+      if (candidate is String && candidate.trim().isNotEmpty) {
+        return candidate;
       }
     }
+
+    return 'Team $fallbackId';
+  }
+
+  List<MatchData> _parseFixturesFromRaw(
+    dynamic rawData,
+    int seasonId,
+    Map<int, String> teamNames,
+  ) {
+    if (rawData is! List) {
+      return [];
+    }
+
+    final fixtures = <MatchData>[];
+
+    for (var index = 0; index < rawData.length; index++) {
+      final item = rawData[index];
+      if (item is! Map) {
+        continue;
+      }
+
+      final map = Map<String, dynamic>.from(item);
+      final homeTeamId = _toInt(map['home_team_id']);
+      final awayTeamId = _toInt(map['away_team_id']);
+
+      if (homeTeamId == null || awayTeamId == null) {
+        continue;
+      }
+
+      final match = Match(
+        matchId: _toInt(map['match_id']) ?? -(index + 1),
+        seasonId: _toInt(map['season_id']) ?? seasonId,
+        homeTeamId: homeTeamId,
+        awayTeamId: awayTeamId,
+        matchDatetime: _toDateTime(map['match_datetime']),
+        venue: _toNullableString(map['venue']),
+        status: _toGameState(map['status']),
+        winnerTeamId: _toInt(map['winner_team_id']),
+        homeSetsWon: _toInt(map['home_sets_won']) ?? 0,
+        awaySetsWon: _toInt(map['away_sets_won']) ?? 0,
+      );
+
+      fixtures.add(
+        MatchData(
+          match: match,
+          homeTeamName: teamNames[homeTeamId] ?? 'Team $homeTeamId',
+          awayTeamName: teamNames[awayTeamId] ?? 'Team $awayTeamId',
+        ),
+      );
+    }
+
+    return fixtures;
+  }
+
+  int? _toInt(dynamic value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  DateTime? _toDateTime(dynamic value) {
+    if (value is DateTime) return value;
+    if (value is String && value.isNotEmpty) {
+      return DateTime.tryParse(value);
+    }
+    return null;
+  }
+
+  String? _toNullableString(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+
+  GameState _toGameState(dynamic value) {
+    if (value is String && value.trim().isNotEmpty) {
+      return GameState.fromString(value);
+    }
+    return GameState.scheduled;
   }
 
   Season? _pickCurrentSeason(List<Season> seasons) {
@@ -194,9 +328,7 @@ class _LeagueAdminFixturesScreenState extends State<LeagueAdminFixturesScreen> {
     final now = DateTime.now();
 
     final active = seasons.where((season) {
-      return !season.isArchived &&
-          now.isAfter(season.startDate) &&
-          now.isBefore(season.endDate.add(const Duration(days: 1)));
+      return _isActiveSeason(season, now);
     }).toList();
 
     if (active.isNotEmpty) {
@@ -210,6 +342,24 @@ class _LeagueAdminFixturesScreenState extends State<LeagueAdminFixturesScreen> {
     }
 
     return seasons.first;
+  }
+
+  bool _isActiveSeason(Season season, DateTime now) {
+    if (season.isArchived) return false;
+    return !now.isBefore(season.startDate) &&
+        !now.isAfter(season.endDate.add(const Duration(days: 1)));
+  }
+
+  Future<void> _openScoreEntry(MatchData fixture) async {
+    final saved = await Navigator.of(context).push<bool>(
+      CupertinoPageRoute(
+        builder: (_) => LeagueAdminMatchScoreEntryScreen(fixture: fixture),
+      ),
+    );
+
+    if (saved == true) {
+      await _refreshCurrent();
+    }
   }
 
   @override
@@ -393,7 +543,10 @@ class _LeagueAdminFixturesScreenState extends State<LeagueAdminFixturesScreen> {
                           if (_loadingFixtures)
                             const Center(child: CupertinoActivityIndicator())
                           else
-                            FixturesWidget(fixtures: displayedFixtures),
+                            FixturesWidget(
+                              fixtures: displayedFixtures,
+                              onFixtureTap: _openScoreEntry,
+                            ),
                         ],
                         if (_errorMessage != null) ...[
                           const SizedBox(height: Spacing.md),

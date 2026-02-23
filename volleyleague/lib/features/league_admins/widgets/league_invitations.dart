@@ -9,6 +9,7 @@ import 'league_pending_invitations_widget.dart';
 class LeagueInvitationsSection extends StatelessWidget {
   final League league;
   final Season? currentSeason;
+  final List<Map<String, dynamic>> seasonTeams;
   final String? errorMessage;
   final bool isSeasonStarted;
   final bool isLoadingInvitations;
@@ -24,6 +25,7 @@ class LeagueInvitationsSection extends StatelessWidget {
     super.key,
     required this.league,
     required this.currentSeason,
+    required this.seasonTeams,
     required this.errorMessage,
     required this.isSeasonStarted,
     required this.isLoadingInvitations,
@@ -73,6 +75,8 @@ class LeagueInvitationsSection extends StatelessWidget {
             seasonId: currentSeason?.seasonId,
             leagueName: league.name,
             seasonName: currentSeason?.name,
+            invitedTeams: pendingInvitations,
+            seasonTeams: seasonTeams,
             onSendInvitation: onSendInvitation,
           ),
         const SizedBox(height: Spacing.lg),

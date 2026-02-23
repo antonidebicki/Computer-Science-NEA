@@ -9,7 +9,7 @@ import '../helpers/helpers.dart';
 // i need to refactor some of these widgets into different files as this is getting a bit long
 // also need to add an option someday to allow 3 or 5 set matches but for 50 hour nea i might add justification for not adding
 class SeasonPlannerCard extends StatefulWidget {
-  final Season? plannedSeason;
+  final Season plannedSeason;
   final int matchesPerWeekPerTeam;
   final int weeksBetweenMatches;
   final bool doubleRoundRobin;
@@ -27,10 +27,10 @@ class SeasonPlannerCard extends StatefulWidget {
   const SeasonPlannerCard({
     super.key,
     required this.plannedSeason,
-    this.matchesPerWeekPerTeam = 1,
-    this.weeksBetweenMatches = 1,
-    this.doubleRoundRobin = false,
-    this.allowedWeekdays = const [1, 3, 5],
+    required this.matchesPerWeekPerTeam,
+    required this.weeksBetweenMatches,
+    required this.doubleRoundRobin,
+    required this.allowedWeekdays,
     required this.onSaveSeason,
   });
 
@@ -50,37 +50,30 @@ class _SeasonPlannerCardState extends State<SeasonPlannerCard> {
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _startDate = DateTime(now.year, now.month, now.day);
-    _endDate = _startDate.add(const Duration(days: 120));
-    final maxEnd = seasonPlannerMaxEndDate(_startDate);
-    if (_endDate.isAfter(maxEnd)) {
-      _endDate = maxEnd;
-    }
-
-    final planned = widget.plannedSeason;
-    if (planned != null) {
-      _applyPlannedSeason(planned);
-    }
+    _applyPlannedSeason(widget.plannedSeason);
     _applyPlannerSettingsFromWidget();
   }
 
   @override
   void didUpdateWidget(covariant SeasonPlannerCard oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final currentSeason = widget.plannedSeason;
+    final previousSeason = oldWidget.plannedSeason;
     final plannedChanged =
-        widget.plannedSeason?.seasonId != oldWidget.plannedSeason?.seasonId;
+      currentSeason.seasonId != previousSeason.seasonId;
+    final seasonDatesChanged =
+        (currentSeason.startDate != previousSeason.startDate ||
+            currentSeason.endDate != previousSeason.endDate);
     final settingsChanged = widget.matchesPerWeekPerTeam !=
             oldWidget.matchesPerWeekPerTeam ||
         widget.weeksBetweenMatches != oldWidget.weeksBetweenMatches ||
         widget.doubleRoundRobin != oldWidget.doubleRoundRobin ||
         !listEquals(widget.allowedWeekdays, oldWidget.allowedWeekdays);
 
-    if (plannedChanged || settingsChanged) {
+    if (plannedChanged || seasonDatesChanged || settingsChanged) {
       setState(() {
-        final planned = widget.plannedSeason;
-        if (plannedChanged && planned != null) {
-          _applyPlannedSeason(planned);
+        if (plannedChanged || seasonDatesChanged) {
+          _applyPlannedSeason(widget.plannedSeason);
         }
         _applyPlannerSettingsFromWidget();
       });

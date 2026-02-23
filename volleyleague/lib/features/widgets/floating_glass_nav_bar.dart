@@ -5,8 +5,17 @@ import 'package:provider/provider.dart';
 import '../../design/index.dart';
 import '../../state/providers/theme_provider.dart';
 
-/// Floating liquid glass navigation bar with animated sliding selector
-/// Matches the design with a capsule-shaped container with icons
+/// A floating, capsule-shaped navigation bar with a liquid-glass appearance.
+///
+/// Displays a row of [NavBarItem] destinations and animates a selector to the
+/// active destination identified by [currentIndex].
+///
+/// When the user selects a destination, [onTap] is invoked with its index.
+/// The parent widget is expected to update [currentIndex] and rebuild.
+///
+/// See also:
+///
+///  * [NavBarItem], which describes each destination rendered by this widget.
 class FloatingGlassNavBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -61,7 +70,7 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
   @override
   Widget build(BuildContext context) {
     final isDark = Provider.of<ThemeProvider>(context).isDark;
-    // colors for dark mode and light mode tho kinda useless rn bc dark mode toggle isnt
+    // colors for dark mode and light mode tho kinda useless rn bc dark mode toggle isnt implemented
     final navBarGlassColor = isDark
         ? const Color(0xCC23242B) // dark glass, alpha 0xCC
         : const Color(0x4DFFFFFF); // light glass, alpha 0x4D
@@ -143,7 +152,6 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
                     },
                   ),
 
-                  // Navigation items
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: List.generate(
@@ -173,12 +181,12 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
     bool isSelected, {
     required bool isDark,
   }) {
+    // i tried to do smth fancy here using a native nav bar for iOS but didnt work, might come back to this later
     final isIPhone = defaultTargetPlatform == TargetPlatform.iOS;
     final iconSize = isIPhone ? 22.0 : 24.0;
 
-    // Unselected icons: almost black for light, lighter for dark
     final unselectedColor = isDark
-        ? const Color(0xFFB0B0B0) // light grey for dark mode
+        ? const Color(0xFFB0B0B0) // again dark mode not implemented yet so its for when its done
         : const Color(0xFF222222).withAlpha((255 * 0.85).toInt());
 
     final selectedColor = isDark ? const Color(0xFF4F8CFF) : CupertinoColors.activeBlue;
@@ -220,7 +228,7 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
   }
 }
 
-/// Data model for navigation bar items
+
 class NavBarItem {
   final Widget Function({double fontSize, Color? color, FontWeight? fontWeight}) icon;
   final String label;

@@ -4,8 +4,9 @@ import '../../../design/index.dart';
 import '../../../state/providers/theme_provider.dart';
 import '../../widgets/floating_glass_nav_bar.dart';
 import 'leagues_screen.dart';
-import 'teams_screen.dart';
+import 'fixtures.dart';
 import 'profile_screen.dart';
+import '../widgets/quick_action_card.dart';
 
 class LeagueAdminHomeScreen extends StatelessWidget {
   const LeagueAdminHomeScreen({super.key});
@@ -29,8 +30,8 @@ class _LeagueAdminHomeContentState extends State<_LeagueAdminHomeContent> {
 
   final List<NavBarItem> _navItems = [
     NavBarItem(icon: AppIcons.home, label: 'Home'),
+    NavBarItem(icon: AppIcons.calendar, label: 'Fixtures'),
     NavBarItem(icon: AppIcons.league, label: 'Leagues'),
-    NavBarItem(icon: AppIcons.team, label: 'Teams'),
     NavBarItem(icon: AppIcons.profile, label: 'Profile'),
   ];
 
@@ -46,10 +47,10 @@ class _LeagueAdminHomeContentState extends State<_LeagueAdminHomeContent> {
       children: [
         IndexedStack(
           index: _currentIndex,
-          children: const [
-            _HomeTab(),
+          children: [
+            _HomeTab(onChangeTab: changeTab),
+            LeagueAdminFixturesScreen(isActive: _currentIndex == 1),
             LeagueAdminLeaguesScreen(),
-            LeagueAdminTeamsScreen(),
             LeagueAdminProfileScreen(),
           ],
         ),
@@ -75,7 +76,9 @@ class _LeagueAdminHomeContentState extends State<_LeagueAdminHomeContent> {
 }
 
 class _HomeTab extends StatelessWidget {
-  const _HomeTab();
+  const _HomeTab({required this.onChangeTab});
+
+  final ValueChanged<int> onChangeTab;
 
   @override
   Widget build(BuildContext context) {
@@ -125,13 +128,16 @@ class _HomeTab extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: Spacing.lg),
-                  _QuickActionCard(
+                  QuickActionCard(
                     title: 'My Leagues',
                     description: 'View and manage leagues you oversee.',
                     icon: AppIcons.league,
+                    onPressed: () {
+                      onChangeTab(2);
+                    },
                   ),
                   const SizedBox(height: Spacing.md),
-                  _QuickActionCard(
+                  QuickActionCard(
                     title: 'Teams',
                     description: 'Review team details and membership.',
                     icon: AppIcons.team,
@@ -142,65 +148,6 @@ class _HomeTab extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _QuickActionCard extends StatelessWidget {
-  final String title;
-  final String description;
-  final Widget Function({double fontSize, Color? color, FontWeight? fontWeight})
-      icon;
-
-  const _QuickActionCard({
-    required this.title,
-    required this.description,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AppGlassContainer(
-      padding: const EdgeInsets.all(Spacing.lg),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: CupertinoColors.activeBlue.withValues(alpha: 0.15),
-            ),
-            child: Center(
-              child: icon(
-                fontSize: 24,
-                color: CupertinoColors.activeBlue,
-              ),
-            ),
-          ),
-          const SizedBox(width: Spacing.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTypography.headline.copyWith(
-                    color: CupertinoColors.label,
-                  ),
-                ),
-                const SizedBox(height: Spacing.xs),
-                Text(
-                  description,
-                  style: AppTypography.callout.copyWith(
-                    color: CupertinoColors.secondaryLabel,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
