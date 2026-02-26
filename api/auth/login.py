@@ -13,7 +13,7 @@ async def login(request: Request, payload: LoginRequest) -> LoginResponse:
             """
             SELECT user_id, username, hashed_password, email, full_name, role 
             FROM "Users" 
-            WHERE username = $1;
+            WHERE LOWER(username) = LOWER($1);
             """,
             payload.username,
         )

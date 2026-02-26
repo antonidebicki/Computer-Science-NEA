@@ -92,6 +92,7 @@ class TeamDataCubit extends Cubit<TeamDataState> {
               
               leagueStandingsList.add(LeagueStandingsInfo(
                 league: league,
+                season: season,
                 standings: standings,
               ));
             } catch (e) {

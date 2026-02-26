@@ -38,6 +38,19 @@ async def list_users(request: Request, user: dict = Depends(AuthUtils.require_ro
 async def create_user(request: Request, payload: UserCreate) -> UserOut:
   pool = request.app.state.pool
   async with pool.acquire() as connection:
+    # Check for existing username (case-insensitive)
+    existing_user = await connection.fetchrow(
+        """
+        SELECT user_id FROM "Users" WHERE LOWER(username) = LOWER($1);
+        """,
+        payload.username,
+    )
+    if existing_user:
+      raise HTTPException(
+          status_code=status.HTTP_409_CONFLICT,
+          detail="A user with that username already exists.",
+      )
+    
     try:
       row = await connection.fetchrow(
           """

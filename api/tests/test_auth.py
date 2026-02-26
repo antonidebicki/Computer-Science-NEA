@@ -128,7 +128,7 @@ async def test_auth():
         
         # Fetch user and verify password
         db_user = await conn.fetchrow(
-            'SELECT user_id, username, hashed_password, role FROM "Users" WHERE username = $1',
+            'SELECT user_id, username, hashed_password, role FROM "Users" WHERE LOWER(username) = LOWER($1)',
             test_username
         )
         

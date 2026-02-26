@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:volleyleague/features/player/screens/fixtures.dart';
+import '../../fixtures/screens/unified_fixtures_screen.dart';
 import '../../../design/index.dart';
 import '../../../state/cubits/player/player_data_cubit.dart';
 import '../../../state/cubits/player/player_data_state.dart';
@@ -75,7 +75,7 @@ class _PlayerHomeScreenContentState extends State<_PlayerHomeScreenContent> {
           index: _currentIndex,
           children: const [
             _HomeTab(),
-            FixturesScreen(),
+            UnifiedFixturesScreen(userRole: FixturesUserRole.player),
             StandingsScreen(),
             ProfileScreen(),
           ],

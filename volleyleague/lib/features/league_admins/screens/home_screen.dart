@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import '../../../design/index.dart';
 import '../../../state/providers/theme_provider.dart';
 import '../../widgets/floating_glass_nav_bar.dart';
+import '../../fixtures/screens/unified_fixtures_screen.dart';
 import 'leagues_screen.dart';
-import 'fixtures.dart';
 import 'profile_screen.dart';
 import '../widgets/quick_action_card.dart';
 
@@ -49,7 +49,10 @@ class _LeagueAdminHomeContentState extends State<_LeagueAdminHomeContent> {
           index: _currentIndex,
           children: [
             _HomeTab(onChangeTab: changeTab),
-            LeagueAdminFixturesScreen(isActive: _currentIndex == 1),
+            UnifiedFixturesScreen(
+              userRole: FixturesUserRole.leagueAdmin,
+              isActive: _currentIndex == 1,
+            ),
             LeagueAdminLeaguesScreen(),
             LeagueAdminProfileScreen(),
           ],

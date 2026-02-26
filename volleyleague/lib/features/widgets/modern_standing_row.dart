@@ -9,6 +9,7 @@ class ModernStandingRow extends StatelessWidget {
   final int wins;
   final int losses;
   final int points;
+  final VoidCallback? onTap;
 
   const ModernStandingRow({
     super.key,
@@ -18,6 +19,7 @@ class ModernStandingRow extends StatelessWidget {
     required this.wins,
     required this.losses,
     required this.points,
+    this.onTap,
   });
 
   @override
@@ -31,7 +33,7 @@ class ModernStandingRow extends StatelessWidget {
       positionColor = const Color(0xFFCD7F32).withValues(alpha:0.5) ; // Bronze
     }
 
-    return Container(
+    final child = Container(
       padding: const EdgeInsets.symmetric(
         horizontal: Spacing.md,
         vertical: Spacing.sm,
@@ -90,6 +92,15 @@ class ModernStandingRow extends StatelessWidget {
           _buildStatCell(points, width: 36, bold: true),
         ],
       ),
+    );
+
+    if (onTap == null) {
+      return child;
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      child: child,
     );
   }
 

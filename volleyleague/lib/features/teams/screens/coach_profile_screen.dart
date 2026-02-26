@@ -12,6 +12,8 @@ import '../../../design/widgets/logout_button.dart';
 import '../widgets/coach_profile_invite_disabled_card.dart';
 import '../widgets/league_requests.dart';
 import '../widgets/home_ground_editor_card.dart';
+import '../../../services/repositories/invitation_repository.dart';
+import '../../../services/api_client.dart';
 
 // the exact same as the player profile but without the team requests
 // i need to find more to add here
@@ -23,6 +25,59 @@ class CoachProfileScreen extends StatefulWidget {
 }
 
 class _CoachProfileScreenState extends State<CoachProfileScreen> {
+  final InvitationRepository _invitationRepository =
+      InvitationRepository(ApiClient());
+  bool _showTeamInvitationCode = false;
+  String? _teamInvitationCode;
+  bool _loadingTeamCode = false;
+  bool _teamCodeLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadTeamInvitationCode();
+    });
+  }
+
+  Future<void> _loadTeamInvitationCode() async {
+    if (_teamCodeLoaded) return;
+    final teamId = _getCoachTeamId();
+    if (teamId == null || teamId == 0) {
+      return;
+    }
+
+    try {
+      setState(() => _loadingTeamCode = true);
+      final code = await _invitationRepository.generateTeamInvitationCode(teamId);
+      if (mounted) {
+        setState(() {
+          _teamInvitationCode = code.invitationCode;
+          _teamCodeLoaded = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        debugPrint('Failed to load team invitation code: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loadingTeamCode = false);
+      }
+    }
+  }
+
+  int? _getCoachTeamId() {
+    try {
+      final teamDataState = context.read<TeamDataCubit>().state;
+      if (teamDataState is TeamDataLoaded && teamDataState.coachTeam != null) {
+        return teamDataState.coachTeam!.teamId;
+      }
+    } catch (e) {
+      debugPrint('Error getting team ID: $e');
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,6 +205,22 @@ class _CoachProfileScreenState extends State<CoachProfileScreen> {
                       if (state is TeamDataLoaded && state.coachTeam != null) {
                         return Column(
                           children: [
+                            SettingsWidgets.buildInvitationCodeSection(
+                              context: context,
+                              isDark: isDark,
+                              invitationCode: _teamInvitationCode,
+                              showInvitationCode: _showTeamInvitationCode,
+                              loadingCode: _loadingTeamCode,
+                              onToggleShowCode: () {
+                                setState(() {
+                                  _showTeamInvitationCode =
+                                      !_showTeamInvitationCode;
+                                });
+                              },
+                              helperText:
+                                  'Share this code with a league admin to invite your team.',
+                            ),
+                            const SizedBox(height: Spacing.lg),
                             LeagueRequestsSection(isDark: isDark),
                             const SizedBox(height: Spacing.lg),
                           ],

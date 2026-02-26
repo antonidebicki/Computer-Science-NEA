@@ -103,7 +103,7 @@ async def login_user(pool, user: TestUser) -> bool:
                 """
                 SELECT user_id, username, hashed_password, email, full_name, role
                 FROM "Users"
-                WHERE username = $1;
+                WHERE LOWER(username) = LOWER($1);
                 """,
                 user.username
             )

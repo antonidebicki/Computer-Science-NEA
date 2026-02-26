@@ -12,8 +12,8 @@ import '../../../services/repositories/match_repository.dart';
 import '../../../services/repositories/team_repository.dart';
 import '../../../services/api_client.dart';
 import '../../widgets/floating_glass_nav_bar.dart';
+import '../../fixtures/screens/unified_fixtures_screen.dart';
 import 'team.dart';
-import 'coach_fixtures_screen.dart';
 import 'coach_profile_screen.dart';
 
 class CoachHomeScreen extends StatelessWidget {
@@ -67,7 +67,7 @@ class _CoachHomeScreenContentState extends State<_CoachHomeScreenContent> {
           index: _currentIndex,
           children: const [
             _HomeTab(),
-            CoachFixturesScreen(),
+            UnifiedFixturesScreen(userRole: FixturesUserRole.coach),
             TeamScreen(),
             CoachProfileScreen(),
           ],

@@ -3,6 +3,7 @@ import '../../design/index.dart';
 import '../../state/cubits/player/player_data_state.dart';
 import 'standings_table_header.dart';
 import 'modern_standing_row.dart';
+import '../standings/widgets/team_details_popup.dart';
 
 class LeagueStandingsData {
   final String leagueName;
@@ -86,6 +87,16 @@ class _StandingsWidgetState extends State<StandingsWidget> {
                 wins: standing.wins,
                 losses: standing.losses,
                 points: standing.points,
+                onTap: () {
+                  showCupertinoDialog(
+                    context: context,
+                    barrierDismissible: true,
+                    builder: (context) => TeamDetailsPopup(
+                      team: standing,
+                      position: index + 1,
+                    ),
+                  );
+                },
               ),
             );
           }),

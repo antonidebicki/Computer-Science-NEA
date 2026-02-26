@@ -1,0 +1,21 @@
+# Web Framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+
+# Database
+asyncpg>=0.30.0
+
+# Authentication & Security
+bcrypt>=4.2.0
+python-jose[cryptography]>=3.3.0
+cryptography>=44.0.0
+
+# Data Validation
+pydantic>=2.10.0
+email-validator>=2.2.0
+
+# HTTP Requests (for testing)
+requests>=2.32.0
+
+# CORS
+python-multipart>=0.0.12

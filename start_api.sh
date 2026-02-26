@@ -32,7 +32,10 @@ fi
 
 echo "✅ Environment configured"
 echo "🚀 Starting FastAPI server..."
+echo "📡 Server will be accessible from: http://<your-machine-ip>:8000"
 echo ""
 
-# Start the server
-uvicorn api.fastapi_app:app --reload
+# Start the server with explicit host binding
+# --host 0.0.0.0 makes it accessible from physical devices on the network
+# --reload enables auto-reload when files change
+python -m uvicorn api.fastapi_app:app --host 0.0.0.0 --port 8000 --reload

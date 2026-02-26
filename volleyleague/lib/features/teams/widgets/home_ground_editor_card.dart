@@ -130,7 +130,7 @@ class _HomeGroundEditorCardState extends State<HomeGroundEditorCard> {
                 ),
               ),
               const SizedBox(height: Spacing.xs),
-              AppTextField(
+              AppLiquidGlassTextField(
                 controller: _homeGroundController,
                 placeholder: 'e.g. Riverside Sports Hall',
               ),
