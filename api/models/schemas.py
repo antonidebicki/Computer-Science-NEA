@@ -226,6 +226,13 @@ class SeasonCreate(BaseModel):
     double_round_robin: bool = False
     allowed_weekdays: List[int] = Field(default_factory=lambda: [1, 3, 5])
 
+    @field_validator('start_date')
+    @classmethod
+    def _validate_start_date(cls, v):
+        if v.date() < datetime.now().date():
+            raise ValueError('season start date cannot be in the past')
+        return v
+
 
 class SeasonUpdate(BaseModel):
     name: Annotated[str, constr(strip_whitespace=True, min_length=1)]
@@ -235,6 +242,13 @@ class SeasonUpdate(BaseModel):
     weeks_between_matches: int = 1
     double_round_robin: bool = False
     allowed_weekdays: List[int] = Field(default_factory=lambda: [1, 3, 5])
+
+    @field_validator('start_date')
+    @classmethod
+    def _validate_start_date(cls, v):
+        if v.date() < datetime.now().date():
+            raise ValueError('season start date cannot be in the past')
+        return v
 
 
 class MatchOut(BaseModel):

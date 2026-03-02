@@ -427,11 +427,22 @@ async def get_team_invitation_code(
         if not team:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
 
-        if team["created_by_user_id"] != current_user_id and user.get("role") != "ADMIN":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have permission to generate this team's invitation code",
+        # Check if user is team creator or admin
+        is_team_creator = team["created_by_user_id"] == current_user_id
+        is_admin = user.get("role") == "ADMIN"
+        
+        # If not creator or admin, check if user is a member of the team
+        if not is_team_creator and not is_admin:
+            is_team_member = await connection.fetchval(
+                'SELECT 1 FROM "TeamMembers" WHERE team_id = $1 AND user_id = $2 LIMIT 1;',
+                team_id,
+                current_user_id,
             )
+            if not is_team_member:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You don't have permission to generate this team's invitation code",
+                )
 
     code = TeamInvitationCodeEngine.generate_code(team_id)
     return TeamInvitationCodeResponse(

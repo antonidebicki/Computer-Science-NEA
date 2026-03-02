@@ -8,6 +8,7 @@ import '../../../design/index.dart';
 import '../../../services/api_client.dart';
 import '../../../services/repositories/match_repository.dart';
 import '../../../state/providers/theme_provider.dart';
+import '../../../main.dart';
 
 class LeagueAdminMatchScoreEntryScreen extends StatefulWidget {
   final MatchData fixture;
@@ -410,9 +411,10 @@ class _LeagueAdminMatchScoreEntryScreenState
                   AppGlassContainer(
                     padding: const EdgeInsets.all(Spacing.lg),
                     borderRadius: 20,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                    child: KeyboardDismissArea(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                         Text(
                           '${widget.fixture.homeTeamName} vs ${widget.fixture.awayTeamName}',
                           style: AppTypography.headline.copyWith(
@@ -489,6 +491,7 @@ class _LeagueAdminMatchScoreEntryScreenState
                           ),
                         ),
                       ],
+                    ),
                     ),
                   ),
                 ]),

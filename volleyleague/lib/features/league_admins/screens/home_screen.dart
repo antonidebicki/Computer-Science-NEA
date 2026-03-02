@@ -29,10 +29,12 @@ class _LeagueAdminHomeContentState extends State<_LeagueAdminHomeContent> {
   int _currentIndex = 0;
 
   final List<NavBarItem> _navItems = [
-    NavBarItem(icon: AppIcons.home, label: 'Home'),
-    NavBarItem(icon: AppIcons.calendar, label: 'Fixtures'),
-    NavBarItem(icon: AppIcons.league, label: 'Leagues'),
-    NavBarItem(icon: AppIcons.profile, label: 'Profile'),
+    // custom navbaritem has both icon (for fallback) and symbol (for native)
+    NavBarItem(icon: AppIcons.home, label: 'Home', symbol: 'house.fill'),
+    NavBarItem(icon: AppIcons.calendar, label: 'Fixtures', symbol: 'calendar'),
+    //NavBarItem(icon: AppIcons.table, label: 'Standings'),
+    NavBarItem(icon: AppIcons.league, label: 'Leagues', symbol: 'trophy'),
+    NavBarItem(icon: AppIcons.profile, label: 'Profile', symbol: 'person'),
   ];
 
   void changeTab(int index) {
@@ -53,25 +55,17 @@ class _LeagueAdminHomeContentState extends State<_LeagueAdminHomeContent> {
               userRole: FixturesUserRole.leagueAdmin,
               isActive: _currentIndex == 1,
             ),
+            //LeagueAdminStandingsScreen(),
             LeagueAdminLeaguesScreen(),
             LeagueAdminProfileScreen(),
           ],
         ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: SafeArea(
-            child: FloatingGlassNavBar(
-              currentIndex: _currentIndex,
-              onTap: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
-              items: _navItems,
-            ),
-          ),
+        FloatingGlassNavBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            changeTab(index);
+          },
+          items: _navItems,
         ),
       ],
     );
@@ -131,6 +125,15 @@ class _HomeTab extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: Spacing.lg),
+                  QuickActionCard(
+                    title: 'Standings',
+                    description: 'View league standings for all your leagues.',
+                    icon: AppIcons.league,
+                    onPressed: () {
+                      onChangeTab(1);
+                    },
+                  ),
+                  const SizedBox(height: Spacing.md),
                   QuickActionCard(
                     title: 'My Leagues',
                     description: 'View and manage leagues you oversee.',

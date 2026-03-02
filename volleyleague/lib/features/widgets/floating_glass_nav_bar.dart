@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:provider/provider.dart';
+import 'package:cupertino_native/cupertino_native.dart';
 import '../../design/index.dart';
 import '../../state/providers/theme_provider.dart';
 
@@ -69,6 +70,29 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
 
   @override
   Widget build(BuildContext context) {
+    final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
+    
+    if (isIOS) {
+      return Align(
+        alignment: Alignment.bottomCenter,
+        child: CNTabBar(
+          items: widget.items.map((item) => CNTabBarItem(
+            icon: CNSymbol(item.symbol),
+            label: item.label,
+          )).toList(),
+          currentIndex: widget.currentIndex,
+          onTap: widget.onTap,
+        ),
+      );
+    }
+    
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: _buildFallbackNavBar(context),
+    );
+  }
+
+  Widget _buildFallbackNavBar(BuildContext context) {
     final isDark = Provider.of<ThemeProvider>(context).isDark;
     // colors for dark mode and light mode tho kinda useless rn bc dark mode toggle isnt implemented
     final navBarGlassColor = isDark
@@ -232,9 +256,11 @@ class _FloatingGlassNavBarState extends State<FloatingGlassNavBar>
 class NavBarItem {
   final Widget Function({double fontSize, Color? color, FontWeight? fontWeight}) icon;
   final String label;
+  final String symbol;
 
   const NavBarItem({
     required this.icon,
     required this.label,
+    required this.symbol,
   });
 }

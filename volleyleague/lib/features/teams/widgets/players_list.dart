@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../design/index.dart';
 import '../../../core/models/team_member.dart';
 import '../../../state/providers/theme_provider.dart';
+import '../../../main.dart';
 
 class PlayersList extends StatelessWidget {
   final List<TeamMember> players;
@@ -317,57 +318,59 @@ class PlayersList extends StatelessWidget {
                   height: popoverHeight,
                   child: Padding(
                     padding: const EdgeInsets.all(Spacing.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Player Number',
-                          style: AppTypography.subhead.copyWith(
-                            color: CupertinoColors.label,
+                    child: KeyboardDismissArea(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Player Number',
+                            style: AppTypography.subhead.copyWith(
+                              color: CupertinoColors.label,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: Spacing.sm),
-                        CupertinoTextField(
-                          controller: controller,
-                          focusNode: focusNode,
-                          autofocus: true,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(3),
-                          ],
-                          placeholder: 'Enter Player Number',
-                        ),
-                        const Spacer(),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CupertinoButton(
-                                padding: EdgeInsets.zero,
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('Cancel'),
+                          const SizedBox(height: Spacing.sm),
+                          CupertinoTextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            autofocus: true,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(3),
+                            ],
+                            placeholder: 'Enter Player Number',
+                          ),
+                          const Spacer(),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: CupertinoButton(
+                                  padding: EdgeInsets.zero,
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Cancel'),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: Spacing.sm),
-                            Expanded(
-                              child: CupertinoButton.filled(
-                                padding: EdgeInsets.zero,
-                                onPressed: () async {
-                                  final raw = controller.text.trim();
-                                  final parsed = int.tryParse(raw);
-                                  if (parsed == null || parsed <= 0) {
-                                    return;
-                                  }
+                              const SizedBox(width: Spacing.sm),
+                              Expanded(
+                                child: CupertinoButton.filled(
+                                  padding: EdgeInsets.zero,
+                                  onPressed: () async {
+                                    final raw = controller.text.trim();
+                                    final parsed = int.tryParse(raw);
+                                    if (parsed == null || parsed <= 0) {
+                                      return;
+                                    }
 
-                                  Navigator.pop(context);
-                                  await onUpdatePlayerNumber!(player, parsed);
-                                },
-                                child: const Text('Save'),
+                                    Navigator.pop(context);
+                                    await onUpdatePlayerNumber!(player, parsed);
+                                  },
+                                  child: const Text('Save'),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

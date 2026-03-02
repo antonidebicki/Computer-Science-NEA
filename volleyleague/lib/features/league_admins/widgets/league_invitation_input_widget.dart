@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import '../../../core/models/invitation.dart';
 import '../../../design/index.dart';
+import '../../../main.dart';
 
 class LeagueInvitationInputWidget extends StatefulWidget {
   final int? leagueId;
@@ -121,9 +122,10 @@ class _LeagueInvitationInputWidgetState
     return AppGlassContainer(
       padding: const EdgeInsets.all(Spacing.lg),
       borderRadius: 20,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: KeyboardDismissArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Text(
             'Invite Team to a Season',
             style: AppTypography.headline.copyWith(
@@ -189,6 +191,7 @@ class _LeagueInvitationInputWidgetState
             ),
           ],
         ],
+        ),
       ),
     );
   }

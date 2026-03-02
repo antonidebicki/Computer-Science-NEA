@@ -53,10 +53,10 @@ class _CoachHomeScreenContentState extends State<_CoachHomeScreenContent> {
   int _currentIndex = 0;
 
   final List<NavBarItem> _navItems = [
-    NavBarItem(icon: AppIcons.home, label: 'Home'),
-    NavBarItem(icon: AppIcons.match, label: 'Fixtures'),
-    NavBarItem(icon: AppIcons.team, label: 'Team'),
-    NavBarItem(icon: AppIcons.profile, label: 'Profile'),
+    NavBarItem(icon: AppIcons.home, label: 'Home', symbol: 'house'),
+    NavBarItem(icon: AppIcons.match, label: 'Fixtures', symbol: 'calendar'),
+    NavBarItem(icon: AppIcons.team, label: 'Team', symbol: 'person.3'),
+    NavBarItem(icon: AppIcons.profile, label: 'Profile', symbol: 'person'),
   ];
 
   @override
@@ -72,13 +72,7 @@ class _CoachHomeScreenContentState extends State<_CoachHomeScreenContent> {
             CoachProfileScreen(),
           ],
         ),
-
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: SafeArea(
-            child: FloatingGlassNavBar(
+        FloatingGlassNavBar(
               currentIndex: _currentIndex,
               onTap: (index) {
                 setState(() {
@@ -87,8 +81,6 @@ class _CoachHomeScreenContentState extends State<_CoachHomeScreenContent> {
               },
               items: _navItems,
             ),
-          ),
-        ),
       ],
     );
   }

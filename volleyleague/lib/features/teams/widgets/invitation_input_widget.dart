@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../../design/index.dart';
+import '../../../main.dart';
 import 'error_notification_widget.dart';
 import 'invitation_code_digit_box.dart';
 
@@ -171,10 +172,11 @@ class _InvitationInputWidgetState extends State<InvitationInputWidget> {
     return AppGlassContainer(
       padding: const EdgeInsets.all(Spacing.lg),
       borderRadius: 20,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: KeyboardDismissArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Text('Invite Players', style: AppTypography.headline),
           const SizedBox(height: Spacing.sm),
           Text(
@@ -227,8 +229,7 @@ class _InvitationInputWidgetState extends State<InvitationInputWidget> {
                   : const Text('Send Invitation'),
             ),
           ),
-        ],
-      ),
+        ],        ),      ),
     );
   }
 }

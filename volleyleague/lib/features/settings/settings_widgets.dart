@@ -12,6 +12,7 @@ class SettingsWidgets {
     required bool showInvitationCode,
     required bool loadingCode,
     required VoidCallback onToggleShowCode,
+    Future<void> Function()? onReloadCode,
     String helperText = 'Share this code to your team admin to join a team',
   }) {
     final displayCode = invitationCode ?? 'Loading...';
@@ -31,7 +32,14 @@ class SettingsWidgets {
               ),
               CupertinoButton(
                 padding: const EdgeInsets.symmetric(horizontal: Spacing.sm),
-                onPressed: loadingCode ? null : onToggleShowCode,
+                onPressed: loadingCode
+                    ? null
+                    : () async {
+                        if (!showInvitationCode && onReloadCode != null) {
+                          await onReloadCode();
+                        }
+                        onToggleShowCode();
+                      },
                 child: Text(
                   showInvitationCode ? 'Hide' : 'Show',
                   style: const TextStyle(

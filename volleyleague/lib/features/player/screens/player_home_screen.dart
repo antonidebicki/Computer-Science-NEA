@@ -55,10 +55,10 @@ class _PlayerHomeScreenContentState extends State<_PlayerHomeScreenContent> {
   int _currentIndex = 0;
 
   final List<NavBarItem> _navItems = [
-    NavBarItem(icon: AppIcons.home, label: 'Home'),
-    NavBarItem(icon: AppIcons.match, label: 'Fixtures'),
-    NavBarItem(icon: AppIcons.league, label: 'Standings'),
-    NavBarItem(icon: AppIcons.profile, label: 'Profile'),
+    NavBarItem(icon: AppIcons.home, label: 'Home', symbol: 'house'),
+    NavBarItem(icon: AppIcons.match, label: 'Fixtures', symbol: 'calendar'),
+    NavBarItem(icon: AppIcons.league, label: 'Standings', symbol: 'chart.bar'),
+    NavBarItem(icon: AppIcons.profile, label: 'Profile', symbol: 'person'),
   ];
 
   void changeTab(int index) {
@@ -81,21 +81,14 @@ class _PlayerHomeScreenContentState extends State<_PlayerHomeScreenContent> {
           ],
         ),
 
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: SafeArea(
-            child: FloatingGlassNavBar(
-              currentIndex: _currentIndex,
-              onTap: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
-              items: _navItems,
-            ),
-          ),
+        FloatingGlassNavBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          items: _navItems,
         ),
       ],
     );
@@ -207,8 +200,13 @@ class _HomeTab extends StatelessWidget {
                             standings: state.leagueStandings.first.standings,
                             onViewFullTable: () {
                               // Use the parent state to change the navigation index
-                              final homeState = context.findAncestorStateOfType<_PlayerHomeScreenContentState>();
-                              homeState?.changeTab(2); // 2 is the Standings tab index
+                              final homeState = context
+                                  .findAncestorStateOfType<
+                                    _PlayerHomeScreenContentState
+                                  >();
+                              homeState?.changeTab(
+                                2,
+                              ); // 2 is the Standings tab index
                             },
                           )
                         else
@@ -220,8 +218,13 @@ class _HomeTab extends StatelessWidget {
                           fixtures: state.upcomingFixtures,
                           onMoreFixtures: () {
                             // Use the parent state to change the navigation index
-                            final homeState = context.findAncestorStateOfType<_PlayerHomeScreenContentState>();
-                            homeState?.changeTab(1); // 1 is the Fixtures tab index
+                            final homeState = context
+                                .findAncestorStateOfType<
+                                  _PlayerHomeScreenContentState
+                                >();
+                            homeState?.changeTab(
+                              1,
+                            ); // 1 is the Fixtures tab index
                           },
                         ),
                         SizedBox(height: Spacing.xxxl),

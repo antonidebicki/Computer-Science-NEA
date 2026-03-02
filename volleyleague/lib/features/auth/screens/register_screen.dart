@@ -4,6 +4,7 @@ import '../../../design/index.dart';
 import '../../../state/cubits/auth/auth_cubit.dart';
 import '../../../state/cubits/auth/auth_state.dart';
 import '../../../core/routing/app_router.dart';
+import '../../../main.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -210,9 +211,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           final isLoading = state is AuthLoading;
 
           return AuthScreenLayout(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+            child: KeyboardDismissArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                 const SizedBox(height: Spacing.sm),
                 Row(
                   children: [
@@ -334,6 +336,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ],
                 ),
               ],
+            ),
             ),
           );
         },

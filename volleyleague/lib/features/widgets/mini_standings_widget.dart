@@ -74,8 +74,14 @@ class MiniStandingsWidget extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
+                  standings.length > 4 ? Text(
                     '+ ${standings.length - 5} more teams',
+                    style: AppTypography.callout.copyWith(
+                      color: CupertinoColors.activeBlue,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ) : Text(
+                    'View Full Table',
                     style: AppTypography.callout.copyWith(
                       color: CupertinoColors.activeBlue,
                       fontWeight: FontWeight.w500,

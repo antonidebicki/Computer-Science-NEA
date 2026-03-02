@@ -40,12 +40,15 @@ class _CoachProfileScreenState extends State<CoachProfileScreen> {
     });
   }
 
-  Future<void> _loadTeamInvitationCode() async {
-    if (_teamCodeLoaded) return;
+  Future<void> _loadTeamInvitationCode({bool force = false}) async {
+    if (_teamCodeLoaded && !force) return;
     final teamId = _getCoachTeamId();
     if (teamId == null || teamId == 0) {
+      debugPrint('No coach team ID found');
       return;
     }
+
+    debugPrint('Loading team invitation code for team: $teamId');
 
     try {
       setState(() => _loadingTeamCode = true);
@@ -56,15 +59,39 @@ class _CoachProfileScreenState extends State<CoachProfileScreen> {
           _teamCodeLoaded = true;
         });
       }
+      debugPrint('Team invitation code loaded successfully: ${code.invitationCode}');
     } catch (e) {
+      debugPrint('Failed to load team invitation code: $e');
       if (mounted) {
-        debugPrint('Failed to load team invitation code: $e');
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Error Loading Code'),
+            content: Text('Failed to load team invitation code:\n$e'),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
       }
     } finally {
       if (mounted) {
         setState(() => _loadingTeamCode = false);
       }
     }
+  }
+
+  Future<void> _reloadTeamInvitationCode() async {
+    if (mounted) {
+      setState(() {
+        _teamCodeLoaded = false;
+        _teamInvitationCode = null;
+      });
+    }
+    await _loadTeamInvitationCode(force: true);
   }
 
   int? _getCoachTeamId() {
@@ -217,6 +244,7 @@ class _CoachProfileScreenState extends State<CoachProfileScreen> {
                                       !_showTeamInvitationCode;
                                 });
                               },
+                              onReloadCode: _reloadTeamInvitationCode,
                               helperText:
                                   'Share this code with a league admin to invite your team.',
                             ),

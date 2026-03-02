@@ -4,6 +4,7 @@ import '../../../design/index.dart';
 import '../../../services/repositories/team_repository.dart';
 import '../../../services/api_client.dart';
 import '../../../state/cubits/coach/team_data_cubit.dart';
+import '../../../main.dart';
 
 class HomeGroundEditorCard extends StatefulWidget {
   final int teamId;
@@ -120,9 +121,10 @@ class _HomeGroundEditorCardState extends State<HomeGroundEditorCard> {
         const SizedBox(height: Spacing.md),
         AppGlassContainer(
           padding: const EdgeInsets.all(Spacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          child: KeyboardDismissArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               Text(
                 'Venue name',
                 style: AppTypography.callout.copyWith(
@@ -147,6 +149,7 @@ class _HomeGroundEditorCardState extends State<HomeGroundEditorCard> {
                 ),
               ),
             ],
+            ),
           ),
         ),
       ],

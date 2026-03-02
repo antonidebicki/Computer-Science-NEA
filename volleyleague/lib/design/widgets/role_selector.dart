@@ -14,7 +14,7 @@ class AppRoleSelector extends StatelessWidget {
     required this.onChanged,
     //original showed team intead of coach but i implemented a dumb system where these roles are directly implmented
     //into the json to the database, so now i have to stick w coach for now, i might change later if my 50h time constaint allows
-    this.roles = const ['Player', 'Coach', 'League'],
+    this.roles = const ['Player', 'Coach', 'Admin'],
   });
 
   @override

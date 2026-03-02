@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 import '../../../core/models/season.dart';
 import '../../../design/index.dart';
 import 'date_row.dart';
@@ -42,16 +43,26 @@ class _SeasonPlannerCardState extends State<SeasonPlannerCard> {
   late DateTime _startDate;
   late DateTime _endDate;
   bool _isSubmitting = false;
+  bool _waitingToSave = false;
   String? _errorMessage;
   int _matchesPerWeekIndex = 2;
   bool _doubleRoundRobin = false;
   final Set<int> _allowedWeekdays = {1, 3, 5};
+  Timer? _debounceTimer;
+  bool _justSaved = false;
+  static const Duration _debounceDelay = Duration(seconds: 2);
 
   @override
   void initState() {
     super.initState();
     _applyPlannedSeason(widget.plannedSeason);
     _applyPlannerSettingsFromWidget();
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -220,6 +231,7 @@ class _SeasonPlannerCardState extends State<SeasonPlannerCard> {
       }
       _errorMessage = null;
     });
+    _scheduleAutoSave();
   }
 
   Future<void> _selectEndDate() async {
@@ -235,6 +247,74 @@ class _SeasonPlannerCardState extends State<SeasonPlannerCard> {
       _endDate = picked;
       _errorMessage = null;
     });
+    _scheduleAutoSave();
+  }
+
+  void _scheduleAutoSave() {
+    _debounceTimer?.cancel();
+    setState(() {
+      _waitingToSave = true;
+      _justSaved = false;
+    });
+    _debounceTimer = Timer(_debounceDelay, _autoSave);
+  }
+
+  Future<void> _autoSave() async {
+    if (!_isRangeValid) {
+      setState(() {
+        _errorMessage = 'Season length must be 1 year or less.';
+        _waitingToSave = false;
+      });
+      return;
+    }
+
+    if (_allowedWeekdays.isEmpty) {
+      setState(() {
+        _errorMessage = 'Select at least one allowed match weekday.';
+        _waitingToSave = false;
+      });
+      return;
+    }
+
+    if (_isSubmitting) return;
+
+    setState(() {
+      _waitingToSave = false;
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final matchesPerWeek = _matchesPerWeekValue < 1
+          ? 1
+          : _matchesPerWeekValue.round();
+      final weeksBetweenMatches =
+          deriveWeeksBetweenMatches(_matchesPerWeekValue);
+      await widget.onSaveSeason(
+        startDate: _startDate,
+        endDate: _endDate,
+        seasonName: _seasonName,
+        matchesPerWeekPerTeam: matchesPerWeek,
+        weeksBetweenMatches: weeksBetweenMatches,
+        doubleRoundRobin: _doubleRoundRobin,
+        allowedWeekdays: _allowedWeekdays.toList()..sort(),
+      );
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+          _justSaved = true;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to save season: $e';
+        _justSaved = false;
+      });
+    } finally {
+      if (mounted && _isSubmitting) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   Future<void> _submit() async {
@@ -361,6 +441,7 @@ class _SeasonPlannerCardState extends State<SeasonPlannerCard> {
                     seasonPlannerMatchesPerWeekOptions.length - 1,
                       );
                 });
+                _scheduleAutoSave();
               },
             ),
           ),
@@ -399,6 +480,7 @@ class _SeasonPlannerCardState extends State<SeasonPlannerCard> {
                   setState(() {
                     _doubleRoundRobin = value;
                   });
+                  _scheduleAutoSave();
                 },
               ),
             ],
@@ -411,39 +493,43 @@ class _SeasonPlannerCardState extends State<SeasonPlannerCard> {
             ),
           ),
           const SizedBox(height: Spacing.xs),
-          Wrap(
-            spacing: Spacing.xs,
-            runSpacing: Spacing.xs,
-            children: List.generate(seasonPlannerWeekdayLabels.length, (index) {
-              final dayNumber = index + 1;
-              final isSelected = _allowedWeekdays.contains(dayNumber);
-              return CupertinoButton(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Spacing.sm,
-                  vertical: Spacing.xs,
-                ),
-                color: isSelected
-                    ? CupertinoColors.activeBlue
-                    : CupertinoColors.systemGrey5.resolveFrom(context),
-                onPressed: () {
-                  setState(() {
-                    if (isSelected) {
-                      _allowedWeekdays.remove(dayNumber);
-                    } else {
-                      _allowedWeekdays.add(dayNumber);
-                    }
-                  });
-                },
-                child: Text(
-                  seasonPlannerWeekdayLabels[index],
-                  style: AppTypography.caption.copyWith(
-                    color: isSelected
-                        ? CupertinoColors.white
-                        : CupertinoColors.label,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(
+              seasonPlannerWeekdayLabels.length,
+              (index) {
+                final dayNumber = index + 1;
+                final isSelected = _allowedWeekdays.contains(dayNumber);
+                return CupertinoButton(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Spacing.xs,
+                    vertical: Spacing.xs,
                   ),
-                ),
-              );
-            }),
+                  color: isSelected
+                      ? CupertinoColors.activeBlue
+                      : CupertinoColors.systemGrey5.resolveFrom(context),
+                  onPressed: () {
+                    setState(() {
+                      if (isSelected) {
+                        _allowedWeekdays.remove(dayNumber);
+                      } else {
+                        _allowedWeekdays.add(dayNumber);
+                      }
+                    });
+                    _scheduleAutoSave();
+                  },
+                  child: Text(
+                    seasonPlannerWeekdayLabels[index],
+                    style: AppTypography.caption.copyWith(
+                      color: isSelected
+                          ? CupertinoColors.white
+                          : CupertinoColors.label,
+                      fontSize: 11,
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
           if (_errorMessage != null) ...[
             const SizedBox(height: Spacing.md),
@@ -454,16 +540,34 @@ class _SeasonPlannerCardState extends State<SeasonPlannerCard> {
               ),
             ),
           ],
-          const SizedBox(height: Spacing.lg),
-          SizedBox(
-            width: double.infinity,
-            child: CupertinoButton.filled(
-              onPressed: _isSubmitting || !_isRangeValid ? null : _submit,
-              child: _isSubmitting
-                  ? const CupertinoActivityIndicator(radius: 8)
-                  : const Text('Save Season'),
-            ),
-          ),
+          if (_errorMessage == null)
+            ...[
+              const SizedBox(height: Spacing.md),
+              Row(
+                children: [
+                  if (_waitingToSave || _isSubmitting)
+                    Padding(
+                      padding: const EdgeInsets.only(right: Spacing.xs),
+                      child: const CupertinoActivityIndicator(radius: 7),
+                    )
+                  else if (_justSaved)
+                    Padding(
+                      padding: const EdgeInsets.only(right: Spacing.xs),
+                      child: Icon(
+                        CupertinoIcons.check_mark_circled,
+                        color: CupertinoColors.systemGreen,
+                        size: 14,
+                      ),
+                    ),
+                  Text(
+                    'Changes are saved automatically',
+                    style: AppTypography.caption.copyWith(
+                      color: CupertinoColors.secondaryLabel,
+                    ),
+                  ),
+                ],
+              ),
+            ],
         ],
       ),
     );

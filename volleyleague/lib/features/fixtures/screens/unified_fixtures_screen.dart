@@ -18,6 +18,7 @@ import '../../../state/cubits/coach/team_data_cubit.dart';
 import '../../../state/cubits/coach/team_data_state.dart';
 import '../../widgets/fixtures_widget.dart';
 import '../widgets/fixture_details_popup.dart';
+import '../../league_admins/screens/match_score_entry_screen.dart';
 
 enum FixturesUserRole { leagueAdmin, coach, player }
 
@@ -494,6 +495,19 @@ class _UnifiedFixturesScreenState extends State<UnifiedFixturesScreen> {
   }
 
   Future<void> _openFixtureDetails(MatchData fixture) async {
+    if (widget.userRole == FixturesUserRole.leagueAdmin) {
+      final result = await Navigator.of(context).push(
+        CupertinoPageRoute(
+          builder: (_) => LeagueAdminMatchScoreEntryScreen(fixture: fixture),
+        ),
+      );
+      if (!mounted) return;
+      if (result == true) {
+        await _refreshCurrent();
+      }
+      return;
+    }
+
     await showCupertinoDialog(
       context: context,
       barrierDismissible: true,

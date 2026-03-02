@@ -69,7 +69,6 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  /// Determine which screen to show based on authentication state
   Widget _getHomeScreen(AuthState state) {
     if (state is AuthAuthenticated) {
       return AppRouter.getHomeScreenForRole(state.user.role);
@@ -81,5 +80,21 @@ class _MyAppState extends State<MyApp> {
       // - AuthLoading: login in progress (loading shown inline)
       return const LoginScreen();
     }
+  }
+}
+
+class KeyboardDismissArea extends StatelessWidget {
+  final Widget child;
+
+  const KeyboardDismissArea({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.translucent,
+      excludeFromSemantics: true,
+      child: child,
+    );
   }
 }

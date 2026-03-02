@@ -415,8 +415,53 @@ class _LeagueAdminLeagueSettingsScreenState
       });
       await _loadCurrentSeason();
       await _loadPendingInvitations();
-      _showSuccessMessage('Season saved successfully.');
     } catch (e) {
+      final errorMessage = e.toString().toLowerCase();
+      
+      // Handle past date validation error by automatically retrying with today's date
+      if (errorMessage.contains('season start date cannot be in the past')) {
+        final today = DateTime.now();
+        final todayDate = DateTime(today.year, today.month, today.day);
+        
+        // Only retry if the passed startDate is actually in the past
+        final passedDateOnly = DateTime(startDate.year, startDate.month, startDate.day);
+        if (passedDateOnly.isBefore(todayDate)) {
+          // Show the error message temporarily in red
+          if (mounted) {
+            setState(() {
+              _seasonPlannerErrorMessage = 'Start date was in the past. Adjusted to today.';
+            });
+          }
+          
+          // Retry with today's date
+          Future.delayed(const Duration(milliseconds: 500), () async {
+            if (!mounted) return;
+            
+            // Calculate new end date to maintain season length
+            final seasonLength = endDate.difference(startDate);
+            final newEndDate = todayDate.add(seasonLength);
+            
+            // Clear the temporary error message and retry
+            if (mounted) {
+              setState(() {
+                _seasonPlannerErrorMessage = null;
+              });
+            }
+            
+            await _handleSaveSeason(
+              startDate: todayDate,
+              endDate: newEndDate,
+              seasonName: seasonName,
+              matchesPerWeekPerTeam: matchesPerWeekPerTeam,
+              weeksBetweenMatches: weeksBetweenMatches,
+              doubleRoundRobin: doubleRoundRobin,
+              allowedWeekdays: allowedWeekdays,
+            );
+          });
+          return;
+        }
+      }
+      
       _showErrorMessage('Failed to save season: $e');
     }
   }
