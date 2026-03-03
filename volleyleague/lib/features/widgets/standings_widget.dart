@@ -91,6 +91,7 @@ class _StandingsWidgetState extends State<StandingsWidget> {
                   showCupertinoDialog(
                     context: context,
                     barrierDismissible: true,
+                    barrierColor: Color.fromARGB(128, 0, 0, 0),
                     builder: (context) => TeamDetailsPopup(
                       team: standing,
                       position: index + 1,

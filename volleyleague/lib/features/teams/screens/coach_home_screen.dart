@@ -360,6 +360,7 @@ class _HomeTabState extends State<_HomeTab> {
                                         showCupertinoDialog(
                                           context: context,
                                           barrierDismissible: true,
+                                          barrierColor: Colors.black.withValues(alpha: 0.5),
                                           builder: (context) => TeamDetailsPopup(
                                             team: standing,
                                             position: index + 1,

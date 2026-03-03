@@ -97,8 +97,8 @@ class _CoachProfileScreenState extends State<CoachProfileScreen> {
   int? _getCoachTeamId() {
     try {
       final teamDataState = context.read<TeamDataCubit>().state;
-      if (teamDataState is TeamDataLoaded && teamDataState.coachTeam != null) {
-        return teamDataState.coachTeam!.teamId;
+      if (teamDataState is TeamDataLoaded && teamDataState.coachTeamIds.isNotEmpty) {
+        return teamDataState.coachTeamIds.first;
       }
     } catch (e) {
       debugPrint('Error getting team ID: $e');
@@ -202,7 +202,7 @@ class _CoachProfileScreenState extends State<CoachProfileScreen> {
                   const SizedBox(height: Spacing.lg),
                   BlocBuilder<TeamDataCubit, TeamDataState>(
                     builder: (context, state) {
-                      if (state is TeamDataLoaded && state.coachTeam == null) {
+                      if (state is TeamDataLoaded && state.coachTeamIds.isEmpty) {
                         return Column(
                           children: [
                             CoachProfileInviteDisabledCard(isDark: isDark),
@@ -216,10 +216,10 @@ class _CoachProfileScreenState extends State<CoachProfileScreen> {
                   ),
                   BlocBuilder<TeamDataCubit, TeamDataState>(
                     builder: (context, state) {
-                      if (state is TeamDataLoaded && state.coachTeam != null) {
+                      if (state is TeamDataLoaded && state.coachTeamIds.isNotEmpty) {
                         return HomeGroundEditorCard(
-                          teamId: state.coachTeam!.teamId,
-                          homeGround: state.coachTeam!.homeGround,
+                          teamId: state.coachTeamIds.first,
+                          homeGround: null,
                         );
                       }
 
@@ -229,7 +229,7 @@ class _CoachProfileScreenState extends State<CoachProfileScreen> {
                   const SizedBox(height: Spacing.lg),
                   BlocBuilder<TeamDataCubit, TeamDataState>(
                     builder: (context, state) {
-                      if (state is TeamDataLoaded && state.coachTeam != null) {
+                      if (state is TeamDataLoaded && state.coachTeamIds.isNotEmpty) {
                         return Column(
                           children: [
                             SettingsWidgets.buildInvitationCodeSection(

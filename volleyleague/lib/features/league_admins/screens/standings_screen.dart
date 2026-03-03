@@ -349,6 +349,7 @@ class _LeagueAdminStandingsScreenState extends State<LeagueAdminStandingsScreen>
                     showCupertinoDialog(
                       context: context,
                       barrierDismissible: true,
+                      barrierColor: Colors.black.withValues(alpha: 0.5),
                       builder: (context) => TeamDetailsPopup(
                         team: standing,
                         position: index + 1,
