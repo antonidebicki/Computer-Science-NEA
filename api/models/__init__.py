@@ -45,6 +45,8 @@ from .schemas import (
     TeamInvitationCodeResponse,
     InvitationCodeValidation,
     InvitationCodeRedeemResponse,
+    SeasonHomeData,
+    PlayerHomeDataResponse,
 )
 
 __all__ = [
@@ -86,4 +88,6 @@ __all__ = [
     "InvitationCodeResponse",
     "InvitationCodeValidation",
     "InvitationCodeRedeemResponse",
+    "SeasonHomeData",
+    "PlayerHomeDataResponse",
 ]
