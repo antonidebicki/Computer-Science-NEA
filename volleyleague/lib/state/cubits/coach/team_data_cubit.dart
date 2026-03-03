@@ -1,21 +1,25 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../services/api_client.dart';
+import '../../../services/repositories/team_repository.dart';
 import '../../../core/models/enums.dart';
 import '../../../core/models/season.dart';
 import '../../../core/models/match_data.dart';
 import '../../../core/models/league.dart';
 import '../../../core/models/match.dart';
+import '../../../core/models/team_member.dart';
 import '../player/player_data_state.dart' show StandingData;
 import 'team_data_state.dart';
 
 class TeamDataCubit extends Cubit<TeamDataState> {
   final ApiClient _apiClient;
+  final TeamRepository _teamRepository;
   final int userId;
 
   TeamDataCubit({
     required this.userId,
   })  : _apiClient = ApiClient(),
+        _teamRepository = TeamRepository(ApiClient()),
         super(TeamDataInitial());
 
   Future<void> loadTeamData() async {
@@ -140,11 +144,30 @@ class TeamDataCubit extends Cubit<TeamDataState> {
         return a.match.matchDatetime!.compareTo(b.match.matchDatetime!);
       });
 
+      // Load all players from coached teams
+      List<TeamMember> allCoachedPlayers = [];
+      try {
+        for (final teamId in coachTeamIds) {
+          final players = await _teamRepository.getTeamMembers(teamId);
+          allCoachedPlayers.addAll(players);
+          debugPrint('Loaded ${players.length} players from team $teamId');
+        }
+        // Remove duplicates by userId
+        final uniquePlayers = <int, TeamMember>{};
+        for (final player in allCoachedPlayers) {
+          uniquePlayers[player.userId] = player;
+        }
+        allCoachedPlayers = uniquePlayers.values.toList();
+        debugPrint('Total unique coached players: ${allCoachedPlayers.length}');
+      } catch (e) {
+        debugPrint('Error loading coached players: $e');
+      }
+
       if (!isClosed) {
         emit(TeamDataLoaded(
           leagueStandings: leagueStandingsList,
           upcomingFixtures: allUpcomingFixtures,
-          coachedPlayers: const [], // Not loading players in home screen for performance
+          coachedPlayers: allCoachedPlayers,
           coachTeam: null, // Not needed for home screen display
           coachTeamIds: coachTeamIds,
         ));

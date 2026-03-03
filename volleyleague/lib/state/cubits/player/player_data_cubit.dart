@@ -30,7 +30,7 @@ class PlayerDataCubit extends Cubit<PlayerDataState> {
         return;
       }
 
-      // This is a new call to make the home screen load wayyy faster, from approx 10s to 500ms
+      // this is a new call to make the home screen load wayyy faster, from approx 10s to 500ms
       final homeData = await _apiClient.get('/api/users/home-data');
       
       if (homeData == null) {
@@ -50,7 +50,6 @@ class PlayerDataCubit extends Cubit<PlayerDataState> {
         return;
       }
 
-      // Transform API response to existing data structures
       List<LeagueStandingsInfo> leagueStandingsList = [];
       List<MatchData> allUpcomingFixtures = [];
 
@@ -60,12 +59,11 @@ class PlayerDataCubit extends Cubit<PlayerDataState> {
         final seasonName = seasonData['season_name'] as String;
         final leagueName = seasonData['league_name'] as String;
         
-        // Create season and league objects
         final season = Season(
           seasonId: seasonId,
           leagueId: leagueId,
           name: seasonName,
-          startDate: DateTime.now(), // Placeholder - from API we don't get these
+          startDate: DateTime.now(),
           endDate: DateTime.now(),
           matchesPerWeekPerTeam: 1,
           weeksBetweenMatches: 1,
@@ -77,13 +75,12 @@ class PlayerDataCubit extends Cubit<PlayerDataState> {
         final league = League(
           leagueId: leagueId,
           name: leagueName,
-          adminUserId: 0, // Not needed for display
+          adminUserId: 0,
           description: null,
           rules: null,
           createdAt: DateTime.now(),
         );
 
-        // Transform standings
         final standingsJson = seasonData['standings'] as List?;
         final standings = standingsJson?.map((json) {
           return StandingData.fromJson(json as Map<String, dynamic>);
@@ -95,7 +92,6 @@ class PlayerDataCubit extends Cubit<PlayerDataState> {
           standings: standings,
         ));
 
-        // Transform fixtures (limit to 5 per season)
         final fixturesJson = seasonData['upcoming_fixtures'] as List?;
         if (fixturesJson != null) {
           for (final fixtureJson in fixturesJson) {
@@ -122,7 +118,6 @@ class PlayerDataCubit extends Cubit<PlayerDataState> {
         }
       }
 
-      // Sort fixtures chronologically
       allUpcomingFixtures.sort((a, b) {
         if (a.match.matchDatetime == null && b.match.matchDatetime == null) return 0;
         if (a.match.matchDatetime == null) return 1;
