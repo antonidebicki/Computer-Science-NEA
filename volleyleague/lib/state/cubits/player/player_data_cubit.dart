@@ -30,8 +30,7 @@ class PlayerDataCubit extends Cubit<PlayerDataState> {
         return;
       }
 
-      // NEW: Call consolidated endpoint that returns all home screen data in 1 call
-      // This replaces 35+ individual API calls
+      // This is a new call to make the home screen load wayyy faster, from approx 10s to 500ms
       final homeData = await _apiClient.get('/api/users/home-data');
       
       if (homeData == null) {

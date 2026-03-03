@@ -262,7 +262,8 @@ async def get_player_home_data(request: Request, user: dict = Depends(AuthUtils.
         s.league_id,
         s.name as season_name,
         l.name as league_name,
-        st.team_id
+        st.team_id,
+        s.start_date
       FROM "Seasons" s
       JOIN "Leagues" l ON s.league_id = l.league_id
       JOIN "SeasonTeams" st ON s.season_id = st.season_id
