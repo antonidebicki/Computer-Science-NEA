@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: volleyleague-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn api.fastapi_app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /docs
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.2
+      - key: ALGORITHM
+        value: HS256
+      - key: SECRET_KEY
+        generateValue: true
+      - key: REFRESH_SECRET_KEY
+        generateValue: true
+      - key: INVITATION_SECRET_KEY
+        generateValue: true
+      - key: PGHOST
+        fromDatabase:
+          name: volleyleague-db
+          property: host
+      - key: PGPORT
+        fromDatabase:
+          name: volleyleague-db
+          property: port
+      - key: PGUSER
+        fromDatabase:
+          name: volleyleague-db
+          property: user
+      - key: PGPASSWORD
+        fromDatabase:
+          name: volleyleague-db
+          property: password
+      - key: PGDATABASE
+        fromDatabase:
+          name: volleyleague-db
+          property: database
+      - key: PGSSLMODE
+        value: require
+
+databases:
+  - name: volleyleague-db
+    plan: free
+    databaseName: volleyleague
+    ipAllowList: []
