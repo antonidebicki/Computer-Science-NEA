@@ -8,10 +8,6 @@ import '../../../state/cubits/player/player_data_state.dart';
 import '../../../state/cubits/auth/auth_cubit.dart';
 import '../../../state/cubits/auth/auth_state.dart';
 import '../../../state/providers/theme_provider.dart';
-import '../../../services/repositories/league_repository.dart';
-import '../../../services/repositories/match_repository.dart';
-import '../../../services/repositories/team_repository.dart';
-import '../../../services/api_client.dart';
 import '../../widgets/mini_standings_widget.dart';
 import '../../widgets/mini_fixtures_widget.dart';
 import '../../widgets/floating_glass_nav_bar.dart';
@@ -26,16 +22,8 @@ class PlayerHomeScreen extends StatelessWidget {
     final authState = context.read<AuthCubit>().state;
     final userId = authState is AuthAuthenticated ? authState.user.userId : 0;
 
-    final apiClient = ApiClient();
-    final leagueRepository = LeagueRepository(apiClient);
-    final matchRepository = MatchRepository(apiClient);
-    final teamRepository = TeamRepository(apiClient);
-
     return BlocProvider(
       create: (_) => PlayerDataCubit(
-        leagueRepository: leagueRepository,
-        matchRepository: matchRepository,
-        teamRepository: teamRepository,
         userId: userId,
       )..loadPlayerData(),
       child: const _PlayerHomeScreenContent(),

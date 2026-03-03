@@ -13,6 +13,8 @@ fi
 
 DB_URL="${1:-${RENDER_DATABASE_URL:-${DATABASE_URL:-}}}"
 
+echo "🔍 DEBUG: DB_URL = $DB_URL"
+
 if [ -n "$DB_URL" ]; then
     if [[ "$DB_URL" == *"USER"* || "$DB_URL" == *"PASSWORD"* || "$DB_URL" == *"HOST"* || "$DB_URL" == *"PORT"* || "$DB_URL" == *"DBNAME"* || "$DB_URL" == *"<"* || "$DB_URL" == *">"* ]]; then
         echo "❌ Detected placeholder values in database URL."
@@ -60,6 +62,9 @@ PY
 )"
     eval "$DB_EXPORTS"
 fi
+
+echo "🔍 DEBUG: PGHOST = ${PGHOST:-NOT SET}"
+echo "🔍 DEBUG: PGPORT = ${PGPORT:-NOT SET}"
 
 : "${PGHOST:?PGHOST is required}"
 : "${PGPORT:?PGPORT is required}"

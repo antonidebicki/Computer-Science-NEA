@@ -24,7 +24,7 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-# Load environment variables from secrets/.env
+# Load environment variables from secrets/.env (only if not already set)
 env_path = Path(__file__).parent.parent.parent / "secrets" / ".env"
 if env_path.exists():
     print("Loading environment variables from secrets/.env")
@@ -33,7 +33,9 @@ if env_path.exists():
             line = line.strip()
             if line and not line.startswith('#') and '=' in line:
                 key, value = line.split('=', 1)
-                os.environ[key] = value
+                # Only set if not already in environment (preserve command-line vars)
+                if key not in os.environ:
+                    os.environ[key] = value
 else:
     print("Warning: secrets/.env not found")
 

@@ -390,3 +390,18 @@ class InvitationCodeRedeemResponse(BaseModel):
     message: str
     sender_user_id: Optional[int] = None
     sender_username: Optional[str] = None
+
+class SeasonHomeData(BaseModel):
+    """Season data for home screen - includes standings and upcoming matches."""
+    season_id: int
+    league_id: int
+    season_name: str
+    league_name: str
+    standings: List[StandingOut]
+    upcoming_fixtures: List[dict]  # Contains match details with team names
+
+
+class PlayerHomeDataResponse(BaseModel):
+    """Consolidated home screen data for a player - reduced from 35+ API calls to 1."""
+    seasons_data: List[SeasonHomeData]
+    player_team_ids: List[int]
