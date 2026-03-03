@@ -27,6 +27,7 @@ class TeamDataCubit extends Cubit<TeamDataState> {
           upcomingFixtures: const [],
           coachedPlayers: const [],
           coachTeam: null,
+          coachTeamIds: const [],
         ));
         return;
       }
@@ -40,17 +41,21 @@ class TeamDataCubit extends Cubit<TeamDataState> {
           upcomingFixtures: const [],
           coachedPlayers: const [],
           coachTeam: null,
+          coachTeamIds: const [],
         ));
         return;
       }
 
       final seasonsData = homeData['seasons_data'] as List?;
+      final coachTeamIds = (homeData['coach_team_ids'] as List?)?.cast<int>() ?? [];
+      
       if (seasonsData == null || seasonsData.isEmpty) {
         emit(TeamDataLoaded(
           leagueStandings: const [],
           upcomingFixtures: const [],
           coachedPlayers: const [],
           coachTeam: null,
+          coachTeamIds: coachTeamIds,
         ));
         return;
       }
@@ -141,6 +146,7 @@ class TeamDataCubit extends Cubit<TeamDataState> {
           upcomingFixtures: allUpcomingFixtures,
           coachedPlayers: const [], // Not loading players in home screen for performance
           coachTeam: null, // Not needed for home screen display
+          coachTeamIds: coachTeamIds,
         ));
       }
     } catch (e, stackTrace) {

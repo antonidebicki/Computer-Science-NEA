@@ -31,12 +31,14 @@ class TeamDataLoaded extends TeamDataState {
   final List<MatchData> upcomingFixtures;
   final List<TeamMember> coachedPlayers;
   final Team? coachTeam;
+  final List<int> coachTeamIds;
 
   TeamDataLoaded({
     required this.leagueStandings,
     required this.upcomingFixtures,
     required this.coachedPlayers,
     required this.coachTeam,
+    this.coachTeamIds = const [],
   });
   
   // Helper to get unique leagues where coach's team participates

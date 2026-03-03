@@ -70,12 +70,12 @@ class _TeamScreenState extends State<TeamScreen> {
       }
 
       final teamDataState = context.read<TeamDataCubit>().state;
-      if (teamDataState is! TeamDataLoaded || teamDataState.coachTeam == null) {
+      if (teamDataState is! TeamDataLoaded || teamDataState.coachTeamIds.isEmpty) {
         _showErrorMessage('No team data available');
         return;
       }
 
-      final teamId = teamDataState.coachTeam!.teamId;
+      final teamId = teamDataState.coachTeamIds.first;
 
       final request = CreateTeamInvitationRequest(
         teamId: teamId,
@@ -241,7 +241,7 @@ class _TeamScreenState extends State<TeamScreen> {
                   BlocBuilder<TeamDataCubit, TeamDataState>(
                     builder: (context, state) {
                       if (state is TeamDataLoaded) {
-                        if (state.coachTeam == null) {
+                        if (state.coachTeamIds.isEmpty) {
                           return CreateTeamGlassCard(
                             isDark: isDark,
                             onCreateTeam: _handleCreateTeam,
@@ -259,7 +259,7 @@ class _TeamScreenState extends State<TeamScreen> {
                   ),
                   BlocBuilder<TeamDataCubit, TeamDataState>(
                     builder: (context, state) {
-                      if (state is TeamDataLoaded && state.coachTeam == null) {
+                      if (state is TeamDataLoaded && state.coachTeamIds.isEmpty) {
                         return const SizedBox(height: Spacing.xxxl);
                       }
 
