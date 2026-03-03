@@ -5,7 +5,7 @@ from asyncpg import UniqueViolationError
 from fastapi import APIRouter, HTTPException, Request, status, Depends
 from api.models import (
     UserCreate, UserOut, InvitationCodeResponse, InvitationCodeValidation, 
-    InvitationCodeRedeemResponse, PlayerHomeDataResponse, SeasonHomeData, StandingOut
+    InvitationCodeRedeemResponse, PlayerHomeDataResponse, CoachHomeDataResponse, SeasonHomeData, StandingOut
 )
 from api.auth import AuthUtils
 from api.services.invitation_code_engine import InvitationCodeEngine
@@ -375,5 +375,160 @@ async def get_player_home_data(request: Request, user: dict = Depends(AuthUtils.
     return PlayerHomeDataResponse(
       seasons_data=season_results,
       player_team_ids=user_team_ids
+    )
+
+
+@router.get("/coaches/home-data", response_model=CoachHomeDataResponse)
+async def get_coach_home_data(request: Request, user: dict = Depends(AuthUtils.get_current_user)) -> CoachHomeDataResponse:
+  """Get all data needed for coach home screen in a single request.
+  This replaces 35+ individual API calls with 1, dramatically improving load times.
+  Returns data for teams where the user is the coach (created_by_user_id).
+  """
+  pool = request.app.state.pool
+  user_id = user.get("user_id")
+  
+  async with pool.acquire() as connection:
+    # Step 1: Get all teams where this user is the coach (creator)
+    coach_teams = await connection.fetch(
+      """
+      SELECT DISTINCT t.team_id, t.name
+      FROM "Teams" t
+      WHERE t.created_by_user_id = $1
+      """,
+      user_id
+    )
+    
+    coach_team_ids = [team["team_id"] for team in coach_teams]
+    
+    if not coach_team_ids:
+      # User is not a coach of any teams
+      return CoachHomeDataResponse(
+        seasons_data=[],
+        coach_team_ids=[]
+      )
+    
+    # Step 2: Get all seasons where coach's teams are participating
+    # and include league information
+    seasons_data = await connection.fetch(
+      """
+      SELECT DISTINCT
+        s.season_id,
+        s.league_id,
+        s.name as season_name,
+        l.name as league_name,
+        st.team_id,
+        s.start_date
+      FROM "Seasons" s
+      JOIN "Leagues" l ON s.league_id = l.league_id
+      JOIN "SeasonTeams" st ON s.season_id = st.season_id
+      WHERE st.team_id = ANY($1::int[])
+      AND s.is_archived = FALSE
+      ORDER BY l.name, s.start_date DESC
+      """,
+      coach_team_ids
+    )
+    
+    if not seasons_data:
+      return CoachHomeDataResponse(
+        seasons_data=[],
+        coach_team_ids=coach_team_ids
+      )
+    
+    # Step 3: Group by season and get standings + upcoming matches
+    season_dict = {}
+    for row in seasons_data:
+      season_id = row["season_id"]
+      if season_id not in season_dict:
+        season_dict[season_id] = {
+          "season_id": season_id,
+          "league_id": row["league_id"],
+          "season_name": row["season_name"],
+          "league_name": row["league_name"],
+          "team_ids": set()
+        }
+      season_dict[season_id]["team_ids"].add(row["team_id"])
+    
+    # Step 4: Get standings for each season
+    season_results = []
+    for season_id, season_info in season_dict.items():
+      # Get ALL standings for the season (not just coach's teams)
+      # This is the key difference from player endpoint - coaches see full table
+      standings_rows = await connection.fetch(
+        """
+        SELECT 
+          ls.standing_id,
+          st.season_id,
+          st.team_id,
+          t.name as team_name,
+          COALESCE(ls.matches_played, 0) as matches_played,
+          COALESCE(ls.wins, 0) as wins,
+          COALESCE(ls.losses, 0) as losses,
+          COALESCE(ls.sets_won, 0) as sets_won,
+          COALESCE(ls.sets_lost, 0) as sets_lost,
+          (COALESCE(ls.sets_won, 0) - COALESCE(ls.sets_lost, 0)) as set_diff,
+          COALESCE(ls.points_won, 0) as points_won,
+          COALESCE(ls.points_lost, 0) as points_lost,
+          (COALESCE(ls.points_won, 0) - COALESCE(ls.points_lost, 0)) as point_diff,
+          COALESCE(ls.league_points, 0) as league_points,
+          ROW_NUMBER() OVER (
+            ORDER BY COALESCE(ls.league_points, 0) DESC,
+            (COALESCE(ls.sets_won, 0) - COALESCE(ls.sets_lost, 0)) DESC,
+            (COALESCE(ls.points_won, 0) - COALESCE(ls.points_lost, 0)) DESC,
+            t.name ASC
+          ) as position
+        FROM "SeasonTeams" st
+        JOIN "Teams" t ON st.team_id = t.team_id
+        LEFT JOIN "LeagueStandings" ls
+          ON ls.season_id = st.season_id
+          AND ls.team_id = st.team_id
+        WHERE st.season_id = $1
+        ORDER BY position ASC
+        """,
+        season_id
+      )
+      
+      standings = [StandingOut(**row) for row in standings_rows]
+      
+      # Get upcoming matches for coach's teams in this season (limit to 5)
+      upcoming_matches = await connection.fetch(
+        """
+        SELECT 
+          m.match_id,
+          m.season_id,
+          m.home_team_id,
+          m.away_team_id,
+          m.match_datetime,
+          ht.name as home_team_name,
+          at.name as away_team_name,
+          m.venue,
+          m.status
+        FROM "Matches" m
+        JOIN "Teams" ht ON m.home_team_id = ht.team_id
+        JOIN "Teams" at ON m.away_team_id = at.team_id
+        WHERE m.season_id = $1
+        AND (m.home_team_id = ANY($2::int[]) OR m.away_team_id = ANY($2::int[]))
+        AND m.status = 'SCHEDULED'
+        AND m.match_datetime IS NOT NULL
+        ORDER BY m.match_datetime ASC
+        LIMIT 5
+        """,
+        season_id,
+        list(season_info["team_ids"])
+      )
+      
+      upcoming_fixtures = [dict(match) for match in upcoming_matches]
+      
+      season_results.append(SeasonHomeData(
+        season_id=season_id,
+        league_id=season_info["league_id"],
+        season_name=season_info["season_name"],
+        league_name=season_info["league_name"],
+        standings=standings,
+        upcoming_fixtures=upcoming_fixtures
+      ))
+    
+    return CoachHomeDataResponse(
+      seasons_data=season_results,
+      coach_team_ids=coach_team_ids
     )
 

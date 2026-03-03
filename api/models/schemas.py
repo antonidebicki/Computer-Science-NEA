@@ -405,3 +405,9 @@ class PlayerHomeDataResponse(BaseModel):
     """Consolidated home screen data for a player - reduced from 35+ API calls to 1."""
     seasons_data: List[SeasonHomeData]
     player_team_ids: List[int]
+
+
+class CoachHomeDataResponse(BaseModel):
+    """Consolidated home screen data for a coach - reduced from 35+ API calls to 1."""
+    seasons_data: List[SeasonHomeData]
+    coach_team_ids: List[int]

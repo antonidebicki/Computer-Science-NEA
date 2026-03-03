@@ -47,6 +47,7 @@ from .schemas import (
     InvitationCodeRedeemResponse,
     SeasonHomeData,
     PlayerHomeDataResponse,
+    CoachHomeDataResponse,
 )
 
 __all__ = [
