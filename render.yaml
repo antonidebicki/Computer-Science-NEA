@@ -45,4 +45,6 @@ databases:
   - name: volleyleague-db
     plan: free
     databaseName: volleyleague
-    ipAllowList: []
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: Allow all (development only)
