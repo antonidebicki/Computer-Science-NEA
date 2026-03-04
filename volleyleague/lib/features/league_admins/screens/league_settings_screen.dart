@@ -47,6 +47,7 @@ class _LeagueAdminLeagueSettingsScreenState
   int _weeksBetweenMatches = 1;
   bool _doubleRoundRobin = false;
   List<int> _allowedWeekdays = const [1, 3, 5];
+  int? _roundsPerWeek;
 
   @override
   void initState() {
@@ -383,6 +384,7 @@ class _LeagueAdminLeagueSettingsScreenState
     required int weeksBetweenMatches,
     required bool doubleRoundRobin,
     required List<int> allowedWeekdays,
+    int? roundsPerWeek,
   }) async {
     try {
       final editableSeason = _plannedSeason;
@@ -410,6 +412,7 @@ class _LeagueAdminLeagueSettingsScreenState
         _weeksBetweenMatches = weeksBetweenMatches;
         _doubleRoundRobin = doubleRoundRobin;
         _allowedWeekdays = allowedWeekdays;
+        _roundsPerWeek = roundsPerWeek;
         _errorMessage = null;
         _seasonPlannerErrorMessage = null;
       });
@@ -549,6 +552,7 @@ class _LeagueAdminLeagueSettingsScreenState
         weeksBetweenMatches: _weeksBetweenMatches,
         doubleRoundRobin: _doubleRoundRobin,
         allowedWeekdays: _allowedWeekdays,
+        roundsPerWeek: _roundsPerWeek,
       );
 
       if (!mounted) return;

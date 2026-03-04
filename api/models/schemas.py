@@ -299,6 +299,7 @@ class GenerateFixturesRequest(BaseModel):
     weeks_between_matches: int = 1
     double_round_robin: bool = False
     allowed_weekdays: Optional[List[int]] = None  # [Mon, Tue, Wed, Thu, Fri, Sat, Sun] as 0s and 1s
+    rounds_per_week: Optional[int] = None  # Number of complete Berger rounds per week
 
 
 class GenerateFixturesResponse(BaseModel):

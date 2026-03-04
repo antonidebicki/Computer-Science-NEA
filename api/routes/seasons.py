@@ -209,7 +209,11 @@ async def generate_fixtures(
                 detail=f"Need at least 2 teams to generate fixtures. Found {len(team_ids)} teams."
             )
         
-        matches = generate_round_robin(team_ids, double=payload.double_round_robin)
+        matches = generate_round_robin(
+            team_ids, 
+            double=payload.double_round_robin,
+            group_by_rounds=payload.rounds_per_week is not None
+        )
         
         if not matches:
             raise HTTPException(
@@ -265,7 +269,8 @@ async def generate_fixtures(
             start_date,
             matches_per_week_per_team=payload.matches_per_week_per_team,
             weeks_between_matches=payload.weeks_between_matches,
-            allowed_weekdays=normalized_weekdays
+            allowed_weekdays=normalized_weekdays,
+            rounds_per_week=payload.rounds_per_week
         )
         
         async with connection.transaction():

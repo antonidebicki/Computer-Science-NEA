@@ -134,6 +134,7 @@ class MatchRepository {
     int weeksBetweenMatches = 1,
     bool doubleRoundRobin = false,
     List<int>? allowedWeekdays,
+    int? roundsPerWeek,
   }) async {
     final data = await _apiClient.post('/api/seasons/$seasonId/generate-fixtures', {
       'start_date': startDate,
@@ -141,6 +142,7 @@ class MatchRepository {
       'weeks_between_matches': weeksBetweenMatches,
       'double_round_robin': doubleRoundRobin,
       if (allowedWeekdays != null) 'allowed_weekdays': allowedWeekdays,
+      if (roundsPerWeek != null) 'rounds_per_week': roundsPerWeek,
     });
     return data;
   }

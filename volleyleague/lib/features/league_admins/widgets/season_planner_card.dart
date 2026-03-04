@@ -23,6 +23,7 @@ class SeasonPlannerCard extends StatefulWidget {
     required int weeksBetweenMatches,
     required bool doubleRoundRobin,
     required List<int> allowedWeekdays,
+    int? roundsPerWeek,
   }) onSaveSeason;
 
   const SeasonPlannerCard({
@@ -290,6 +291,8 @@ class _SeasonPlannerCardState extends State<SeasonPlannerCard> {
           : _matchesPerWeekValue.round();
       final weeksBetweenMatches =
           deriveWeeksBetweenMatches(_matchesPerWeekValue);
+      // Use rounds_per_week mode when matches per week >= 1
+      final roundsPerWeek = _matchesPerWeekValue >= 1 ? _matchesPerWeekValue.round() : null;
       await widget.onSaveSeason(
         startDate: _startDate,
         endDate: _endDate,
@@ -298,6 +301,7 @@ class _SeasonPlannerCardState extends State<SeasonPlannerCard> {
         weeksBetweenMatches: weeksBetweenMatches,
         doubleRoundRobin: _doubleRoundRobin,
         allowedWeekdays: _allowedWeekdays.toList()..sort(),
+        roundsPerWeek: roundsPerWeek,
       );
       if (mounted) {
         setState(() {
@@ -343,6 +347,8 @@ class _SeasonPlannerCardState extends State<SeasonPlannerCard> {
           : _matchesPerWeekValue.round();
       final weeksBetweenMatches =
           deriveWeeksBetweenMatches(_matchesPerWeekValue);
+      // Use rounds_per_week mode when matches per week >= 1
+      final roundsPerWeek = _matchesPerWeekValue >= 1 ? _matchesPerWeekValue.round() : null;
       await widget.onSaveSeason(
         startDate: _startDate,
         endDate: _endDate,
@@ -351,6 +357,7 @@ class _SeasonPlannerCardState extends State<SeasonPlannerCard> {
         weeksBetweenMatches: weeksBetweenMatches,
         doubleRoundRobin: _doubleRoundRobin,
         allowedWeekdays: _allowedWeekdays.toList()..sort(),
+        roundsPerWeek: roundsPerWeek,
       );
     } catch (e) {
       setState(() => _errorMessage = 'Failed to save season: $e');
