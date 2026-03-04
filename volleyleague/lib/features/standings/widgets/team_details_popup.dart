@@ -17,29 +17,30 @@ class TeamDetailsPopup extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.xl),
+        padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
+            maxHeight: MediaQuery.of(context).size.height * 0.6,
           ),
           child: AppGlassContainer(
             padding: const EdgeInsets.all(Spacing.lg),
-            borderRadius: 24,
+            borderRadius: 32,
             blur: 15,
             color: CupertinoColors.white.withValues(alpha: 0.3),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Team Details',
-                      style: AppTypography.headline.copyWith(
-                        color: CupertinoColors.label,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Text(
+                        'Team Details',
+                        style: AppTypography.title1.copyWith(
+                          color: CupertinoColors.label,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     CupertinoButton(
@@ -48,15 +49,15 @@ class TeamDetailsPopup extends StatelessWidget {
                       child: const Icon(
                         CupertinoIcons.xmark_circle_fill,
                         color: CupertinoColors.systemGrey,
-                        size: 24,
+                        size: 28,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: Spacing.md),
+                const SizedBox(height: Spacing.lg),
 
                 // Scrollable content
-                Flexible(
+                Expanded(
                   child: SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,72 +100,66 @@ class TeamDetailsPopup extends StatelessWidget {
                                 children: [
                                   Text(
                                     team.teamName,
-                                    style: AppTypography.body.copyWith(
+                                    style: AppTypography.headline.copyWith(
                                       color: CupertinoColors.label,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 17,
                                     ),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: Spacing.xs),
                                   Text(
-                                    'Position $position • ${team.points} pts',
-                                    style: AppTypography.footnote.copyWith(
+                                    '${team.points} pts • Position $position',
+                                    style: AppTypography.caption.copyWith(
                                       color: CupertinoColors.secondaryLabel,
-                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ],
+                            ],
                         ),
 
-                        const SizedBox(height: Spacing.md),
-                        const Divider(height: 1),
-                        const SizedBox(height: Spacing.md),
+                        const SizedBox(height: Spacing.lg),
+                        const Divider(),
+                        const SizedBox(height: Spacing.lg),
 
                         // Match Statistics
                         _buildSectionTitle('Match Statistics'),
-                        const SizedBox(height: Spacing.sm),
+                        const SizedBox(height: Spacing.md),
                         _buildStatRow(
                           label: 'Matches Played',
                           value: '${team.matchesPlayed}',
-                          icon: CupertinoIcons.calendar,
                         ),
-                        const SizedBox(height: Spacing.xs),
+                        const SizedBox(height: Spacing.sm),
                         _buildStatRow(
                           label: 'Wins',
                           value: '${team.wins}',
-                          icon: CupertinoIcons.checkmark_circle,
                           valueColor: CupertinoColors.activeGreen,
                         ),
-                        const SizedBox(height: Spacing.xs),
+                        const SizedBox(height: Spacing.sm),
                         _buildStatRow(
                           label: 'Losses',
                           value: '${team.losses}',
-                          icon: CupertinoIcons.xmark_circle,
                           valueColor: CupertinoColors.systemRed,
                         ),
 
                         const SizedBox(height: Spacing.md),
-                        const Divider(height: 1),
+                        const Divider(),
                         const SizedBox(height: Spacing.md),
 
                         // Set Statistics
                         _buildSectionTitle('Set Statistics'),
-                        const SizedBox(height: Spacing.sm),
+                        const SizedBox(height: Spacing.md),
                         _buildStatRow(
                           label: 'Sets Won',
                           value: '${team.setsWon}',
                         ),
-                        const SizedBox(height: Spacing.xs),
+                        const SizedBox(height: Spacing.sm),
                         _buildStatRow(
                           label: 'Sets Lost',
                           value: '${team.setsLost}',
                         ),
-                        const SizedBox(height: Spacing.xs),
+                        const SizedBox(height: Spacing.sm),
                         _buildStatRow(
                           label: 'Set Difference',
                           value: '${team.setDiff > 0 ? '+' : ''}${team.setDiff}',
@@ -174,22 +169,22 @@ class TeamDetailsPopup extends StatelessWidget {
                         ),
 
                         const SizedBox(height: Spacing.md),
-                        const Divider(height: 1),
+                        const Divider(),
                         const SizedBox(height: Spacing.md),
 
                         // Points Statistics
                         _buildSectionTitle('Points Statistics'),
-                        const SizedBox(height: Spacing.sm),
+                        const SizedBox(height: Spacing.md),
                         _buildStatRow(
                           label: 'Points Scored',
                           value: '${team.pointsWon}',
                         ),
-                        const SizedBox(height: Spacing.xs),
+                        const SizedBox(height: Spacing.sm),
                         _buildStatRow(
                           label: 'Points Conceded',
                           value: '${team.pointsLost}',
                         ),
-                        const SizedBox(height: Spacing.xs),
+                        const SizedBox(height: Spacing.sm),
                         _buildStatRow(
                           label: 'Point Difference',
                           value: '${team.pointDiff > 0 ? '+' : ''}${team.pointDiff}',
@@ -197,34 +192,32 @@ class TeamDetailsPopup extends StatelessWidget {
                               ? CupertinoColors.activeGreen
                               : (team.pointDiff < 0 ? CupertinoColors.systemRed : null),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
+              ),
+              const SizedBox(height: Spacing.lg),
 
-                const SizedBox(height: Spacing.md),
-
-                // Close Button
-                SizedBox(
-                  width: double.infinity,
-                  child: CupertinoButton.filled(
-                    padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Close'),
-                  ),
+              // Close Button
+              SizedBox(
+                width: double.infinity,
+                child: CupertinoButton.filled(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Close'),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
+    ),
     );
   }
 
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: AppTypography.callout.copyWith(
+      style: AppTypography.headline.copyWith(
         color: CupertinoColors.label,
         fontWeight: FontWeight.bold,
       ),
@@ -234,23 +227,14 @@ class TeamDetailsPopup extends StatelessWidget {
   Widget _buildStatRow({
     required String label,
     required String value,
-    IconData? icon,
     Color? valueColor,
   }) {
     return Row(
       children: [
-        if (icon != null) ...[
-          Icon(
-            icon,
-            size: 16,
-            color: CupertinoColors.systemGrey,
-          ),
-          const SizedBox(width: Spacing.xs),
-        ],
         Expanded(
           child: Text(
             label,
-            style: AppTypography.footnote.copyWith(
+            style: AppTypography.callout.copyWith(
               color: CupertinoColors.secondaryLabel,
               fontWeight: FontWeight.w600,
             ),
@@ -258,16 +242,16 @@ class TeamDetailsPopup extends StatelessWidget {
         ),
         Container(
           padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.sm,
-            vertical: 4,
+            horizontal: Spacing.md,
+            vertical: Spacing.sm,
           ),
           decoration: BoxDecoration(
-            color: CupertinoColors.systemGrey6.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(6),
+            color: CupertinoColors.systemGrey6.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             value,
-            style: AppTypography.callout.copyWith(
+            style: AppTypography.headline.copyWith(
               color: valueColor ?? CupertinoColors.label,
               fontWeight: FontWeight.bold,
             ),

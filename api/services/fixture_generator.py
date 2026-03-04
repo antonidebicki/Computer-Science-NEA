@@ -5,13 +5,54 @@ from datetime import timedelta
 
 
 def generate_round_robin(team_ids: List[int], double: bool = False) -> List[Tuple[int, int]]:
+    """
+    Generate round-robin fixtures using the Berger method (circle/rotation algorithm).
+    
+    Args:
+        team_ids: List of team IDs to schedule
+        double: If True, generate double round-robin (home and away)
+    
+    Returns:
+        List of match tuples (team_a_id, team_b_id)
+    """
+    if len(team_ids) < 2:
+        return []
+    
+    teams: List[Optional[int]] = list(team_ids)
+    
+    # If odd number of teams, add a dummy (bye)
+    has_bye = len(teams) % 2 == 1
+    if has_bye:
+        teams.append(None)  # None represents a "bye"
+    
+    n = len(teams)
+    num_rounds = n - 1
     matches = []
     
-    for i, team_a in enumerate(team_ids):
-        for team_b in team_ids[i+1:]:
-            matches.append((team_a, team_b))
+    # Berger algorithm: fix first team, rotate others in circle
+    for round_num in range(num_rounds):
+        round_matches = []
+        
+        # Pair teams: first with last, second with second-to-last, etc.
+        for i in range(n // 2):
+            home_team = teams[i]
+            away_team = teams[n - 1 - i]
+            
+            # Skip matches involving the bye team
+            if home_team is not None and away_team is not None:
+                # Alternate home/away based on round and position
+                if (round_num + i) % 2 == 0:
+                    round_matches.append((home_team, away_team))
+                else:
+                    round_matches.append((away_team, home_team))
+        
+        matches.extend(round_matches)
+        
+        # Rotate all teams except the first one
+        teams = [teams[0]] + [teams[-1]] + teams[1:-1]
     
     if double:
+        # For double round-robin, add reverse fixtures
         reverse_matches = [(away, home) for home, away in matches]
         matches.extend(reverse_matches)
     

@@ -270,7 +270,7 @@ class _StandingsScreenState extends State<StandingsScreen> {
                                         showCupertinoDialog(
                                           context: context,
                                           barrierDismissible: true,
-                                          barrierColor: Colors.black.withValues(alpha: 0.5),
+                                          barrierColor: CupertinoColors.black.withOpacity(0.5),
                                           builder: (context) => TeamDetailsPopup(
                                             team: standing,
                                             position: index + 1,

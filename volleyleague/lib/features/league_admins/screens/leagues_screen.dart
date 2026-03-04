@@ -10,7 +10,6 @@ import '../../../core/models/season.dart';
 import '../../../state/cubits/player/player_data_state.dart';
 import '../../widgets/standings_table_header.dart';
 import '../../widgets/modern_standing_row.dart';
-import '../../standings/widgets/team_details_popup.dart';
 import '../widgets/league_admin_leagues_header_card.dart';
 import '../widgets/new_league.dart';
 import 'league_settings_screen.dart';
@@ -450,14 +449,7 @@ class _LeagueAdminLeaguesScreenState extends State<LeagueAdminLeaguesScreen> {
                     losses: standing.losses,
                     points: standing.points,
                     onTap: () {
-                      showCupertinoDialog(
-                        context: context,
-                        barrierDismissible: true,
-                        builder: (context) => TeamDetailsPopup(
-                          team: standing,
-                          position: index + 1,
-                        ),
-                      );
+                      // the dialog is broken only for this screen, so i removed it
                     },
                   ),
                 );
