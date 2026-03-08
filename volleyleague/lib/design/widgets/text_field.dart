@@ -27,6 +27,18 @@ class AppTextField extends StatelessWidget {
       decoration: BoxDecoration(
         color: CupertinoColors.systemGrey6,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0x4D9E9E9E),
+          width: 1.25,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: CupertinoColors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            spreadRadius: 0,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       suffix: suffix,
     );
@@ -61,6 +73,18 @@ class _AppPasswordFieldState extends State<AppPasswordField> {
       decoration: BoxDecoration(
         color: CupertinoColors.systemGrey6,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0x4D9E9E9E),
+          width: 1.25,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: CupertinoColors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            spreadRadius: 0,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       suffix: GestureDetector(
         onTap: () => setState(() => _obscure = !_obscure),
@@ -99,24 +123,42 @@ class AppLiquidGlassTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: FakeGlass(
-        shape: LiquidRoundedSuperellipse(borderRadius: borderRadius),
-        settings: LiquidGlassSettings(
-          blur: blur,
-          glassColor: glassColor,
-          lightIntensity: 1.5,
-        ),
-        child: CupertinoTextField(
-          controller: controller,
-          placeholder: placeholder,
-          keyboardType: keyboardType,
-          padding: const EdgeInsets.symmetric(vertical: Spacing.lg, horizontal: Spacing.lg),
-          decoration: const BoxDecoration(
-            color: Color(0x00000000), // Transparent to show glass effect
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(borderRadius),
+        boxShadow: [
+          BoxShadow(
+            color: CupertinoColors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            spreadRadius: 0,
+            offset: const Offset(0, 3),
           ),
-          suffix: suffix,
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: FakeGlass(
+          shape: LiquidRoundedSuperellipse(borderRadius: borderRadius),
+          settings: LiquidGlassSettings(
+            blur: blur,
+            glassColor: glassColor,
+            lightIntensity: 1.5,
+          ),
+          child: CupertinoTextField(
+            controller: controller,
+            placeholder: placeholder,
+            keyboardType: keyboardType,
+            padding: const EdgeInsets.symmetric(vertical: Spacing.lg, horizontal: Spacing.lg),
+            decoration: BoxDecoration(
+              color: const Color(0x00000000),
+              borderRadius: BorderRadius.circular(borderRadius),
+              border: Border.all(
+                color: const Color(0x4D9E9E9E),
+                width: 1.25,
+              ),
+            ),
+            suffix: suffix,
+          ),
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:volleyleague/core/routing/app_router.dart';
@@ -11,6 +12,8 @@ import 'package:volleyleague/state/providers/theme_provider.dart';
 import 'package:volleyleague/features/auth/screens/login_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
   // Initialize dependencies
   final apiClient = ApiClient();
   final authService = AuthService();
@@ -42,30 +45,52 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthCubit, AuthState>(
-      listener: (context, state) {
-        // When user logs out or session expires, navigate to login
-        if (state is AuthUnauthenticated) {
-          _navigatorKey.currentState?.pushNamedAndRemoveUntil(
-            AppRouter.login,
-            (route) => false,
-          );
-        }
-      },
-      child: CupertinoApp(
-        navigatorKey: _navigatorKey,
-        title: 'VolleyLeague',
-        theme: const CupertinoThemeData(
-          primaryColor: CupertinoColors.activeBlue,
-        ),
-        home: BlocBuilder<AuthCubit, AuthState>(
-          builder: (context, state) {
-            return _getHomeScreen(state);
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, _) {
+        final isDark = themeProvider.isDark;
+        final overlayStyle = isDark
+            ? SystemUiOverlayStyle.dark.copyWith(
+                statusBarColor: CupertinoColors.transparent,
+              )
+            : SystemUiOverlayStyle.light.copyWith(
+                statusBarColor: CupertinoColors.transparent,
+              );
+
+        SystemChrome.setSystemUIOverlayStyle(overlayStyle);
+
+        return BlocListener<AuthCubit, AuthState>(
+          listener: (context, state) {
+            // When user logs out or session expires, navigate to login
+            if (state is AuthUnauthenticated) {
+              _navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                AppRouter.login,
+                (route) => false,
+              );
+            }
           },
-        ),
-        onGenerateRoute: AppRouter.generateRoute,
-        debugShowCheckedModeBanner: false,
-      ),
+          child: CupertinoApp(
+            navigatorKey: _navigatorKey,
+            title: 'VolleyLeague',
+            theme: CupertinoThemeData(
+              primaryColor: CupertinoColors.activeBlue,
+              brightness: themeProvider.brightness,
+            ),
+            builder: (context, child) {
+              return AnnotatedRegion<SystemUiOverlayStyle>(
+                value: overlayStyle,
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
+            home: BlocBuilder<AuthCubit, AuthState>(
+              builder: (context, state) {
+                return _getHomeScreen(state);
+              },
+            ),
+            onGenerateRoute: AppRouter.generateRoute,
+            debugShowCheckedModeBanner: false,
+          ),
+        );
+      },
     );
   }
 

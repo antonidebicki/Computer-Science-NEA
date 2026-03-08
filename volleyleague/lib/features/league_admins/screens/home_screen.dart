@@ -142,12 +142,6 @@ class _HomeTab extends StatelessWidget {
                       onChangeTab(2);
                     },
                   ),
-                  const SizedBox(height: Spacing.md),
-                  QuickActionCard(
-                    title: 'Teams',
-                    description: 'Review team details and membership.',
-                    icon: AppIcons.team,
-                  ),
                   const SizedBox(height: Spacing.xxxl),
                 ]),
               ),

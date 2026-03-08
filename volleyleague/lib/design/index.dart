@@ -13,7 +13,6 @@ export 'theme/dark_theme.dart';
 
 export 'widgets/text.dart';
 export 'widgets/button.dart';
-export 'widgets/card.dart';
 export 'widgets/scaffold.dart';
 export 'widgets/text_field.dart';
 export 'widgets/role_selector.dart';

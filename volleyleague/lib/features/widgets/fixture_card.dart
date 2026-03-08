@@ -36,6 +36,30 @@ class FixtureCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: CupertinoColors.systemBackground.withOpacity(0.3),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0x5AFFFFFF),
+          width: 2.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: CupertinoColors.black.withValues(alpha: 0.10),
+            blurRadius: 14,
+            spreadRadius: 0,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: CupertinoColors.black.withValues(alpha: 0.05),
+            blurRadius: 6,
+            spreadRadius: -1,
+            offset: const Offset(0, 3),
+          ),
+          BoxShadow(
+            color: CupertinoColors.white.withValues(alpha: 0.65),
+            blurRadius: 5,
+            spreadRadius: -2,
+            offset: const Offset(0, -1),
+          ),
+        ],
       ),
       padding: const EdgeInsets.all(Spacing.md),
       child: Column(

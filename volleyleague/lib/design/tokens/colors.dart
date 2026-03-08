@@ -21,7 +21,7 @@ class AppColors {
   // liquid glass
   static const LiquidGlassSettings liquidGlassSettings = LiquidGlassSettings(
           blur: 10,
-          glassColor: Color(0x80F2F2F7),
+          glassColor: Color(0x80F2F2F2),
           lightIntensity: 1.2,
         );
 }

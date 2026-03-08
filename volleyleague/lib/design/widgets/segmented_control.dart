@@ -26,7 +26,7 @@ class AppSegmentedControl<T> extends StatelessWidget {
         shape: LiquidRoundedSuperellipse(borderRadius: 12),
         settings: const LiquidGlassSettings(
           blur: 10,
-          glassColor: Color(0x80F2F2F7),
+          glassColor: Color(0x80D0D0D0),
           lightIntensity: 1.2,
         ),
         child: Container(

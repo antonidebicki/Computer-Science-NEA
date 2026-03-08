@@ -68,7 +68,7 @@ class AppTonalButton extends StatelessWidget {
           shape: LiquidRoundedSuperellipse(borderRadius: 30),
           settings: const LiquidGlassSettings(
             blur: 10,
-            glassColor: Color(0x99F2F2F7),
+            glassColor: Color(0x99D0D0D0),
             lightIntensity: 1.2,
           ),
           child: Container(

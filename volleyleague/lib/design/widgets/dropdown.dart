@@ -114,55 +114,80 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
   }
 
   Widget _buildDropdownButton(DropdownItem<T> selectedItem) {
-    return ClipRRect(
-      key: _buttonKey,
-      borderRadius: BorderRadius.circular(16),
-      child: FakeGlass(
-        shape: LiquidRoundedSuperellipse(borderRadius: 16),
-        settings: const LiquidGlassSettings(
-          blur: 10,
-          glassColor: Color(0x33FFFFFF),
-          lightIntensity: 1.5,
-        ),
-        child: Container(
-          width: widget.width,
-          padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.lg,
-            vertical: Spacing.md,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 14,
+            spreadRadius: 0,
+            offset: const Offset(0, 8),
           ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0x44FFFFFF), width: 1.5),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 6,
+            spreadRadius: -1,
+            offset: const Offset(0, 3),
           ),
-          child: Row(
-            mainAxisSize: widget.width != null
-                ? MainAxisSize.max
-                : MainAxisSize.min,
-            children: [
-              if (selectedItem.icon != null) ...[
-                selectedItem.icon!,
-                const SizedBox(width: Spacing.sm),
-              ],
-              Expanded(
-                child: Text(
-                  selectedItem.label,
-                  style: AppTypography.callout.copyWith(
-                    color: CupertinoColors.label,
-                    fontWeight: FontWeight.w600,
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.65),
+            blurRadius: 5,
+            spreadRadius: -2,
+            offset: const Offset(0, -1),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        key: _buttonKey,
+        borderRadius: BorderRadius.circular(16),
+        child: FakeGlass(
+          shape: LiquidRoundedSuperellipse(borderRadius: 16),
+          settings: const LiquidGlassSettings(
+            blur: 10,
+            glassColor: Color(0x33D0D0D0),
+            lightIntensity: 1.5,
+          ),
+          child: Container(
+            width: widget.width,
+            padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.lg,
+              vertical: Spacing.md,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0x5AFFFFFF), width: 2.0),
+            ),
+            child: Row(
+              mainAxisSize: widget.width != null
+                  ? MainAxisSize.max
+                  : MainAxisSize.min,
+              children: [
+                if (selectedItem.icon != null) ...[
+                  selectedItem.icon!,
+                  const SizedBox(width: Spacing.sm),
+                ],
+                Expanded(
+                  child: Text(
+                    selectedItem.label,
+                    style: AppTypography.callout.copyWith(
+                      color: CupertinoColors.label,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(width: Spacing.sm),
-              AnimatedRotation(
-                turns: _isExpanded ? 0.5 : 0,
-                duration: const Duration(milliseconds: 200),
-                child: AppIcons.chevronDown(
-                  fontSize: 16,
-                  color: CupertinoColors.secondaryLabel,
+                const SizedBox(width: Spacing.sm),
+                AnimatedRotation(
+                  turns: _isExpanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: AppIcons.chevronDown(
+                    fontSize: 16,
+                    color: CupertinoColors.secondaryLabel,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -170,74 +195,99 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
   }
 
   Widget _buildDropdownMenu() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: FakeGlass(
-        shape: LiquidRoundedSuperellipse(borderRadius: 16),
-        settings: const LiquidGlassSettings(
-          blur: 10,
-          glassColor: Color(0x44FFFFFF),
-          lightIntensity: 1.5,
-        ),
-        child: Container(
-          width: widget.width,
-          constraints: const BoxConstraints(maxHeight: 300),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0x44FFFFFF), width: 1.5),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 14,
+            spreadRadius: 0,
+            offset: const Offset(0, 8),
           ),
-          child: ListView.separated(
-            shrinkWrap: true,
-            padding: const EdgeInsets.symmetric(vertical: Spacing.xs),
-            itemCount: widget.items.length,
-            separatorBuilder: (context, index) => Container(
-              height: 1,
-              margin: const EdgeInsets.symmetric(horizontal: Spacing.sm),
-              color: CupertinoColors.separator.withValues(alpha: 0.3),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 6,
+            spreadRadius: -1,
+            offset: const Offset(0, 3),
+          ),
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.65),
+            blurRadius: 5,
+            spreadRadius: -2,
+            offset: const Offset(0, -1),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: FakeGlass(
+          shape: LiquidRoundedSuperellipse(borderRadius: 16),
+          settings: const LiquidGlassSettings(
+            blur: 10,
+            glassColor: Color(0x44D0D0D0),
+            lightIntensity: 1.5,
+          ),
+          child: Container(
+            width: widget.width,
+            constraints: const BoxConstraints(maxHeight: 300),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0x5AFFFFFF), width: 2.0),
             ),
-            itemBuilder: (context, index) {
-              final item = widget.items[index];
-              final isSelected = item.value == widget.value;
+            child: ListView.separated(
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(vertical: Spacing.xs),
+              itemCount: widget.items.length,
+              separatorBuilder: (context, index) => Container(
+                height: 1,
+                margin: const EdgeInsets.symmetric(horizontal: Spacing.sm),
+                color: CupertinoColors.separator.withValues(alpha: 0.3),
+              ),
+              itemBuilder: (context, index) {
+                final item = widget.items[index];
+                final isSelected = item.value == widget.value;
 
-              return CupertinoButton(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Spacing.lg,
-                  vertical: Spacing.md,
-                ),
-                onPressed: () {
-                  widget.onChanged(item.value);
-                  _removeOverlay();
-                  setState(() {
-                    _isExpanded = false;
-                  });
-                },
-                child: Row(
-                  children: [
-                    if (item.icon != null) ...[
-                      item.icon!,
-                      const SizedBox(width: Spacing.sm),
-                    ],
-                    Expanded(
-                      child: Text(
-                        item.label,
-                        style: AppTypography.callout.copyWith(
-                          color: CupertinoColors.label,
-                          fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
+                return CupertinoButton(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Spacing.lg,
+                    vertical: Spacing.md,
+                  ),
+                  onPressed: () {
+                    widget.onChanged(item.value);
+                    _removeOverlay();
+                    setState(() {
+                      _isExpanded = false;
+                    });
+                  },
+                  child: Row(
+                    children: [
+                      if (item.icon != null) ...[
+                        item.icon!,
+                        const SizedBox(width: Spacing.sm),
+                      ],
+                      Expanded(
+                        child: Text(
+                          item.label,
+                          style: AppTypography.callout.copyWith(
+                            color: CupertinoColors.label,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    if (isSelected)
-                      AppIcons.checkmark(
-                        fontSize: 16,
-                        color: CupertinoColors.label,
-                      ),
-                  ],
-                ),
-              );
-            },
+                      if (isSelected)
+                        AppIcons.checkmark(
+                          fontSize: 16,
+                          color: CupertinoColors.label,
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),
