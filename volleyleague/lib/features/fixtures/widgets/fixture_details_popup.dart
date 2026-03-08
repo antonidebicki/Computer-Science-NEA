@@ -56,6 +56,7 @@ class _FixtureDetailsPopupState extends State<FixtureDetailsPopup> {
           borderRadius: 32,
           blur: 15,
           color: CupertinoColors.white.withValues(alpha: 0.3),
+          disableShadow: true,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,

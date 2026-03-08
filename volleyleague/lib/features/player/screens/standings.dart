@@ -68,66 +68,41 @@ class _StandingsScreenState extends State<StandingsScreen> {
             BlocBuilder<PlayerDataCubit, PlayerDataState>(
               builder: (context, state) {
                 if (state is PlayerDataLoading) {
-                  return SliverPadding(
-                    padding: EdgeInsets.only(
-                      left: Spacing.lg,
-                      right: Spacing.lg,
-                      top: Spacing.lg,
-                      bottom: 100,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        AppGlassContainer(
-                          padding: EdgeInsets.all(Spacing.xl),
-                          child: Center(
-                            child: CupertinoActivityIndicator(radius: 16),
-                          ),
-                        ),
-                      ]),
+                  return const SliverFillRemaining(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: Spacing.md),
+                      child: Center(
+                        child: CupertinoActivityIndicator(radius: 16),
+                      ),
                     ),
                   );
                 }
 
                 if (state is PlayerDataError) {
-                  return SliverPadding(
-                    padding: const EdgeInsets.only(
-                      left: Spacing.lg,
-                      right: Spacing.lg,
-                      top: Spacing.lg,
-                      bottom: 100,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        AppGlassContainer(
-                          padding: const EdgeInsets.all(Spacing.lg),
-                          child: Text(
-                            state.message,
-                            style: AppTypography.callout.copyWith(
-                              color: CupertinoColors.systemRed,
-                            ),
+                  return SliverFillRemaining(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
+                      child: Center(
+                        child: Text(
+                          state.message,
+                          style: AppTypography.callout.copyWith(
+                            color: CupertinoColors.systemRed,
                           ),
+                          textAlign: TextAlign.center,
                         ),
-                      ]),
+                      ),
                     ),
                   );
                 }
 
                 if (state is PlayerDataLoaded) {
                   if (state.leagueStandings.isEmpty) {
-                    return SliverPadding(
-                      padding: EdgeInsets.only(
-                        left: Spacing.lg,
-                        right: Spacing.lg,
-                        top: Spacing.lg,
-                        bottom: 100,
-                      ),
-                      sliver: SliverList(
-                        delegate: SliverChildListDelegate([
-                          AppGlassContainer(
-                            padding: EdgeInsets.all(Spacing.lg),
-                            child: Text('No league data available'),
-                          ),
-                        ]),
+                    return const SliverFillRemaining(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: Spacing.md),
+                        child: Center(
+                          child: Text('No league data available'),
+                        ),
                       ),
                     );
                   }
@@ -161,20 +136,18 @@ class _StandingsScreenState extends State<StandingsScreen> {
                       ? (state.getStandingsForSeason(selectedSeason.seasonId) ?? [])
                       : <StandingData>[];
 
-                  return SliverPadding(
-                    padding: const EdgeInsets.only(
-                      left: Spacing.lg,
-                      right: Spacing.lg,
-                      top: Spacing.lg,
-                      bottom: 100,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        AppGlassContainer(
-                          padding: const EdgeInsets.all(Spacing.lg),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+                  return SliverList(
+                    delegate: SliverChildListDelegate([
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          Spacing.md,
+                          Spacing.sm,
+                          Spacing.md,
+                          0,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                               if (leagues.length > 1) ...[
                                 AppDropdown<int>(
                                   value: selectedLeagueIndex,
@@ -283,8 +256,8 @@ class _StandingsScreenState extends State<StandingsScreen> {
                             ],
                           ),
                         ),
-                      ]),
-                    ),
+                      const SizedBox(height: 100),
+                    ]),
                   );
                 }
 

@@ -14,6 +14,16 @@ class TeamRepository {
     return (data as List).map((json) => Team.fromJson(json)).toList();
   }
 
+  Future<Team?> getTeamById(int teamId) async {
+    final teams = await getTeams();
+    for (final team in teams) {
+      if (team.teamId == teamId) {
+        return team;
+      }
+    }
+    return null;
+  }
+
   Future<List<TeamMember>> getTeamMembers(int teamId) async {
     final data = await _apiClient.get('/api/teams/$teamId/members');
     return (data as List).map((json) => TeamMember.fromJson(json)).toList();

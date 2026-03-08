@@ -49,14 +49,12 @@ class AuthScreenLayout extends StatelessWidget {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              child: AppGlassContainer(
+              child: SizedBox(
                 width: containerWidth,
-                padding: containerPadding,
-                borderRadius: Spacing.xl,
-                blur: Spacing.xl,
-                color: CupertinoColors.white.withValues(alpha: 0.25),
-                borderColor: CupertinoColors.white.withValues(alpha: 0.3),
-                child: child,
+                child: Padding(
+                  padding: containerPadding ?? EdgeInsets.zero,
+                  child: child,
+                ),
               ),
             ),
           ),

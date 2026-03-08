@@ -22,6 +22,7 @@ class HomeGroundEditorCard extends StatefulWidget {
 
 class _HomeGroundEditorCardState extends State<HomeGroundEditorCard> {
   late TextEditingController _homeGroundController;
+  late final TeamRepository _teamRepository;
   bool _isSavingHomeGround = false;
   int? _homeGroundTeamId;
 
@@ -29,17 +30,27 @@ class _HomeGroundEditorCardState extends State<HomeGroundEditorCard> {
   void initState() {
     super.initState();
     _homeGroundController = TextEditingController();
+    _teamRepository = TeamRepository(ApiClient());
     _syncHomeGround(
       teamId: widget.teamId,
       homeGround: widget.homeGround,
     );
+    _loadPersistedHomeGround();
   }
 
   @override
   void didUpdateWidget(HomeGroundEditorCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.teamId != widget.teamId ||
-        oldWidget.homeGround != widget.homeGround) {
+    if (oldWidget.teamId != widget.teamId) {
+      _syncHomeGround(
+        teamId: widget.teamId,
+        homeGround: widget.homeGround,
+      );
+      _loadPersistedHomeGround();
+      return;
+    }
+
+    if (oldWidget.homeGround != widget.homeGround) {
       _syncHomeGround(
         teamId: widget.teamId,
         homeGround: widget.homeGround,
@@ -54,11 +65,24 @@ class _HomeGroundEditorCardState extends State<HomeGroundEditorCard> {
   }
 
   void _syncHomeGround({required int teamId, String? homeGround}) {
-    if (_homeGroundTeamId == teamId && _homeGroundController.text.isNotEmpty) {
+    if (_homeGroundTeamId == teamId && homeGround == null) {
       return;
     }
     _homeGroundTeamId = teamId;
     _homeGroundController.text = homeGround ?? '';
+  }
+
+  Future<void> _loadPersistedHomeGround() async {
+    try {
+      final team = await _teamRepository.getTeamById(widget.teamId);
+      if (!mounted) return;
+      _syncHomeGround(
+        teamId: widget.teamId,
+        homeGround: team?.homeGround,
+      );
+    } catch (_) {
+      // Keep current text if lookup fails.
+    }
   }
 
   Future<void> _saveHomeGround() async {
@@ -66,10 +90,17 @@ class _HomeGroundEditorCardState extends State<HomeGroundEditorCard> {
     setState(() => _isSavingHomeGround = true);
 
     try {
-      final repository = TeamRepository(ApiClient());
-      await repository.updateTeam(teamId: widget.teamId, homeGround: value);
+      final updatedTeam = await _teamRepository.updateTeam(
+        teamId: widget.teamId,
+        homeGround: value,
+      );
       if (!mounted) return;
+      _syncHomeGround(
+        teamId: widget.teamId,
+        homeGround: updatedTeam.homeGround,
+      );
       context.read<TeamDataCubit>().refresh();
+      _loadPersistedHomeGround();
       showCupertinoDialog(
         context: context,
         builder: (context) => CupertinoAlertDialog(

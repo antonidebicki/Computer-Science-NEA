@@ -605,11 +605,9 @@ class _UnifiedFixturesScreenState extends State<UnifiedFixturesScreen> {
               ),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  AppGlassContainer(
-                    padding: const EdgeInsets.all(Spacing.lg),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                         if (_loadingLeagues)
                           const Center(child: CupertinoActivityIndicator())
                         else if (_leagues.isEmpty)
@@ -740,7 +738,6 @@ class _UnifiedFixturesScreenState extends State<UnifiedFixturesScreen> {
                           ),
                         ],
                       ],
-                    ),
                   ),
                   const SizedBox(height: Spacing.xxxl),
                 ]),

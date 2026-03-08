@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Request, status, Depends
 from asyncpg.exceptions import UniqueViolationError
 from api.models import (
@@ -435,8 +435,8 @@ async def create_league_invitation(
 @router.get("/leagues/invitations/sent", response_model=dict)
 async def get_sent_league_invitations(
     request: Request,
-    league_id: int = None,
-    season_id: int = None,
+    league_id: Optional[int] = None,
+    season_id: Optional[int] = None,
     user: dict = Depends(AuthUtils.require_role(["ADMIN"]))
 ) -> dict:
     """Get invitations sent by the current league admin."""

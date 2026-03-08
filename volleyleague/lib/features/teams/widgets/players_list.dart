@@ -10,11 +10,13 @@ class PlayersList extends StatelessWidget {
   final List<TeamMember> players;
   final Future<void> Function(TeamMember player, int playerNumber)?
       onUpdatePlayerNumber;
+  final VoidCallback? onInvitePlayers;
   
   const PlayersList({
     super.key,
     required this.players,
     this.onUpdatePlayerNumber,
+    this.onInvitePlayers,
   });
 
   @override
@@ -22,70 +24,54 @@ class PlayersList extends StatelessWidget {
     final isDark = context.watch<ThemeProvider>().isDark;
 
     if (players.isEmpty) {
-      return AppGlassContainer(
-        padding: const EdgeInsets.all(Spacing.lg),
-        borderRadius: 20,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Team Players',
-              style: AppTypography.headline.copyWith(
-                color: CupertinoColors.label,
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(),
+          const SizedBox(height: Spacing.md),
+          Center(
+            child: Text(
+              'No players in this team yet',
+              style: AppTypography.callout.copyWith(
+                color: CupertinoColors.secondaryLabel,
               ),
             ),
-            const SizedBox(height: Spacing.md),
-            Center(
-              child: Text(
-                'No players in this team yet',
-                style: AppTypography.callout.copyWith(
-                  color: CupertinoColors.secondaryLabel,
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
-    return AppGlassContainer(
-      padding: const EdgeInsets.all(Spacing.lg),
-      borderRadius: 20,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Team Players',
-                style: AppTypography.headline.copyWith(
-                  color: CupertinoColors.label,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Spacing.md,
-                  vertical: Spacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: CupertinoColors.activeBlue.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${players.length}',
-                  style: AppTypography.callout.copyWith(
-                    color: CupertinoColors.activeBlue,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(),
+        const SizedBox(height: Spacing.md),
+        ...players.map((player) => _buildPlayerCard(player, isDark, context)),
+      ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Team Players',
+          style: AppTypography.headline.copyWith(
+            color: CupertinoColors.label,
           ),
-          const SizedBox(height: Spacing.md),
-          ...players.map((player) => _buildPlayerCard(player, isDark, context)),
-        ],
-      ),
+        ),
+        CupertinoButton(
+          padding: EdgeInsets.zero,
+          minSize: 30,
+          onPressed: onInvitePlayers,
+          child: const Icon(
+            CupertinoIcons.person_add,
+            size: 24,
+            color: CupertinoColors.activeBlue,
+          ),
+        ),
+      ],
     );
   }
 

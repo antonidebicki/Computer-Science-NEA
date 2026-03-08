@@ -277,11 +277,9 @@ class _LeagueAdminFixturesScreenState extends State<LeagueAdminFixturesScreen> {
               ),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  AppGlassContainer(
-                    padding: const EdgeInsets.all(Spacing.lg),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                         if (_loadingLeagues)
                           const Center(child: CupertinoActivityIndicator())
                         else if (_adminLeagues.isEmpty)
@@ -405,7 +403,6 @@ class _LeagueAdminFixturesScreenState extends State<LeagueAdminFixturesScreen> {
                           ),
                         ],
                       ],
-                    ),
                   ),
                   const SizedBox(height: Spacing.xxxl),
                 ]),

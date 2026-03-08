@@ -151,18 +151,6 @@ class _TeamScreenState extends State<TeamScreen> {
     );
   }
 
-  int? _getCoachTeamId() {
-    try {
-      final teamDataState = context.read<TeamDataCubit>().state;
-      if (teamDataState is TeamDataLoaded && teamDataState.coachTeam != null) {
-        return teamDataState.coachTeam!.teamId;
-      }
-    } catch (e) {
-      debugPrint('Error getting team ID: $e');
-    }
-    return null;
-  }
-
   Future<void> _handleCreateTeam(String teamName, String? logoUrl) async {
     final authState = context.read<AuthCubit>().state;
     if (authState is! AuthAuthenticated) {
@@ -197,6 +185,33 @@ class _TeamScreenState extends State<TeamScreen> {
         _showErrorMessage('Failed to update player number: ${e.toString()}');
       }
     }
+  }
+
+  Future<void> _showInvitePlayersPopup(int teamId) async {
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (popupContext) {
+        return CupertinoPageScaffold(
+          navigationBar: CupertinoNavigationBar(
+            middle: const Text('Invite Players'),
+            trailing: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => Navigator.of(popupContext).pop(),
+              child: const Text('Done'),
+            ),
+          ),
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(Spacing.lg),
+              child: InvitationInputWidget(
+                teamId: teamId,
+                onSendInvitation: _handleSendInvitation,
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -251,6 +266,9 @@ class _TeamScreenState extends State<TeamScreen> {
                         return PlayersList(
                           players: state.coachedPlayers,
                           onUpdatePlayerNumber: _handleUpdatePlayerNumber,
+                          onInvitePlayers: () {
+                            _showInvitePlayersPopup(state.coachTeamIds.first);
+                          },
                         );
                       }
 
@@ -285,11 +303,6 @@ class _TeamScreenState extends State<TeamScreen> {
                                 ),
                               ),
                             ),
-                          InvitationInputWidget(
-                            teamId: _getCoachTeamId() ?? 0,
-                            onSendInvitation: _handleSendInvitation,
-                          ),
-                          const SizedBox(height: Spacing.lg),
                           if (_isLoadingInvitations)
                             const Center(
                               child: CupertinoActivityIndicator(radius: 16),

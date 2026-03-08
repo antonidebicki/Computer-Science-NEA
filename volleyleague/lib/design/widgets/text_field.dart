@@ -28,7 +28,7 @@ class AppTextField extends StatelessWidget {
         color: CupertinoColors.systemGrey6,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: const Color(0x4D9E9E9E),
+          color: const Color(0x219E9E9E),
           width: 1.25,
         ),
         boxShadow: [
@@ -74,7 +74,7 @@ class _AppPasswordFieldState extends State<AppPasswordField> {
         color: CupertinoColors.systemGrey6,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: const Color(0x4D9E9E9E),
+          color: const Color(0x219E9E9E),
           width: 1.25,
         ),
         boxShadow: [
@@ -153,7 +153,7 @@ class AppLiquidGlassTextField extends StatelessWidget {
               color: const Color(0x00000000),
               borderRadius: BorderRadius.circular(borderRadius),
               border: Border.all(
-                color: const Color(0x4D9E9E9E),
+                color: const Color(0x219E9E9E),
                 width: 1.25,
               ),
             ),

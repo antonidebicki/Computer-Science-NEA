@@ -76,9 +76,11 @@ class _MyAppState extends State<MyApp> {
               brightness: themeProvider.brightness,
             ),
             builder: (context, child) {
-              return AnnotatedRegion<SystemUiOverlayStyle>(
-                value: overlayStyle,
-                child: child ?? const SizedBox.shrink(),
+              return KeyboardDismissArea(
+                child: AnnotatedRegion<SystemUiOverlayStyle>(
+                  value: overlayStyle,
+                  child: child ?? const SizedBox.shrink(),
+                ),
               );
             },
             home: BlocBuilder<AuthCubit, AuthState>(
@@ -115,10 +117,11 @@ class KeyboardDismissArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
+    return Listener(
+      onPointerDown: (_) {
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
       behavior: HitTestBehavior.translucent,
-      excludeFromSemantics: true,
       child: child,
     );
   }

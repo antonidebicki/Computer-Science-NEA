@@ -11,6 +11,7 @@ class AppGlassContainer extends StatelessWidget {
   final Color color;
   final double borderWidth;
   final Color borderColor;
+  final bool disableShadow;
 
   const AppGlassContainer({
     super.key,
@@ -23,6 +24,7 @@ class AppGlassContainer extends StatelessWidget {
     this.color = const Color(0x99EAF0F7),
     this.borderWidth = 1.0,
     this.borderColor = const Color(0x14000000),
+    this.disableShadow = false,
   });
 
   @override
@@ -30,7 +32,7 @@ class AppGlassContainer extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
-        boxShadow: [
+        boxShadow: disableShadow ? null : [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 14,
