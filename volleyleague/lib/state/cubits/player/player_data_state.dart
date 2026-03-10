@@ -23,12 +23,14 @@ class LeagueStandingsInfo {
 class PlayerDataLoaded extends PlayerDataState {
   final List<LeagueStandingsInfo> leagueStandings;
   final List<MatchData> upcomingFixtures;
+  final List<int> playerTeamIds;
 
   PlayerDataLoaded({
     required this.leagueStandings,
     required this.upcomingFixtures,
+    this.playerTeamIds = const [],
   });
-  
+
   // Helper to get unique leagues where user participates
   List<League> get uniqueLeagues {
     final seen = <int>{};
@@ -37,7 +39,7 @@ class PlayerDataLoaded extends PlayerDataState {
         .map((info) => info.league)
         .toList();
   }
-  
+
   // Helper to get seasons for a specific league where user participates
   List<Season> getSeasonsForLeague(int leagueId) {
     return leagueStandings
@@ -45,7 +47,7 @@ class PlayerDataLoaded extends PlayerDataState {
         .map((info) => info.season)
         .toList();
   }
-  
+
   // Helper to get standings for a specific season
   List<StandingData>? getStandingsForSeason(int seasonId) {
     try {
@@ -110,4 +112,3 @@ class StandingData {
     );
   }
 }
-

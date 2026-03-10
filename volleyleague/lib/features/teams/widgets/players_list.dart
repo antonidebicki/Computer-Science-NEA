@@ -63,13 +63,12 @@ class PlayersList extends StatelessWidget {
         ),
         CupertinoButton(
           padding: EdgeInsets.zero,
-          minSize: 30,
           onPressed: onInvitePlayers,
           child: const Icon(
             CupertinoIcons.person_add,
             size: 24,
             color: CupertinoColors.activeBlue,
-          ),
+          ), minimumSize: Size(30, 30),
         ),
       ],
     );

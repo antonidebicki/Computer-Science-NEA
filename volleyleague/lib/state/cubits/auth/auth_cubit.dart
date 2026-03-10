@@ -95,19 +95,16 @@ class AuthCubit extends Cubit<AuthState> {
         emit(AuthUnauthenticated());
       }
     } catch (e) {
-      // On any error during startup check, just show login screen
       await _authService.clearTokens();
       emit(AuthUnauthenticated());
     }
   }
 
   Future<void> logout() async {
-    // Don't emit loading during logout - just clear and navigate
     try {
       await _userRepository.logout();
       emit(AuthUnauthenticated());
     } catch (e) {
-      // Even on error, clear tokens and show login screen
       await _authService.clearTokens();
       emit(AuthUnauthenticated());
     }

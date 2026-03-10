@@ -6,8 +6,14 @@ import 'fixture_card.dart';
 class FixturesWidget extends StatelessWidget {
   final List<MatchData> fixtures;
   final ValueChanged<MatchData>? onFixtureTap;
+  final bool isAdminView;
 
-  const FixturesWidget({super.key, required this.fixtures, this.onFixtureTap});
+  const FixturesWidget({
+    super.key,
+    required this.fixtures,
+    this.onFixtureTap,
+    this.isAdminView = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +57,7 @@ class FixturesWidget extends StatelessWidget {
                               fixture.match.status.value == 'FINISHED' ||
                               fixture.match.status.value == 'PROCESSED',
                           isClickable: true,
+                          isAdminView: isAdminView,
                         ),
                       ),
               );

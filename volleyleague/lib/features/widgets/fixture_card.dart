@@ -11,6 +11,7 @@ class FixtureCard extends StatelessWidget {
   final int? awaySetsWon;
   final bool showScore;
   final bool isClickable;
+  final bool isAdminView;
 
   const FixtureCard({
     super.key,
@@ -22,6 +23,7 @@ class FixtureCard extends StatelessWidget {
     this.awaySetsWon,
     this.showScore = false,
     this.isClickable = false,
+    this.isAdminView = false,
   });
 
   @override
@@ -36,10 +38,7 @@ class FixtureCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: CupertinoColors.systemBackground.withOpacity(0.3),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0x5AFFFFFF),
-          width: 2.0,
-        ),
+        border: Border.all(color: const Color(0x5AFFFFFF), width: 2.0),
         boxShadow: [
           BoxShadow(
             color: CupertinoColors.black.withValues(alpha: 0.10),
@@ -100,7 +99,9 @@ class FixtureCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: Spacing.sm),
               child: Text(
-                'Tap to enter or edit score',
+                isAdminView
+                    ? 'Tap to enter or edit score'
+                    : 'Tap to view scores',
                 style: AppTypography.caption.copyWith(
                   color: CupertinoColors.secondaryLabel,
                 ),

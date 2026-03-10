@@ -214,7 +214,7 @@ class _UnifiedFixturesScreenState extends State<UnifiedFixturesScreen> {
 
     try {
       List<Season> availableSeasons;
-      
+
       // For players and coaches, get seasons from cubit
       if (widget.userRole == FixturesUserRole.player) {
         final playerState = context.read<PlayerDataCubit>().state;
@@ -273,13 +273,12 @@ class _UnifiedFixturesScreenState extends State<UnifiedFixturesScreen> {
     if (widget.userRole == FixturesUserRole.player) {
       final playerState = context.read<PlayerDataCubit>().state;
       if (playerState is PlayerDataLoaded) {
-        final standings = playerState.getStandingsForSeason(seasonId);
-        if (standings != null && standings.isNotEmpty) {
-          playerTeamIds = standings.map((s) => s.teamId).toList();
-          debugPrint('Player teams for season $seasonId: $playerTeamIds');
-        }
+        // Use the actual player's team IDs, not all teams in the season
+        playerTeamIds = playerState.playerTeamIds;
+        debugPrint('Player teams for season $seasonId: $playerTeamIds');
       }
-    } else if (widget.userRole == FixturesUserRole.coach && _userTeamId != null) {
+    } else if (widget.userRole == FixturesUserRole.coach &&
+        _userTeamId != null) {
       playerTeamIds = [_userTeamId!];
     }
 
@@ -320,9 +319,11 @@ class _UnifiedFixturesScreenState extends State<UnifiedFixturesScreen> {
         // Filter matches to only include teams from the standings
         if (playerTeamIds.isNotEmpty) {
           matches = matches
-              .where((match) =>
-                  playerTeamIds.contains(match.homeTeamId) ||
-                  playerTeamIds.contains(match.awayTeamId))
+              .where(
+                (match) =>
+                    playerTeamIds.contains(match.homeTeamId) ||
+                    playerTeamIds.contains(match.awayTeamId),
+              )
               .toList();
           debugPrint('Filtered to ${matches.length} matches for player teams');
         }
@@ -347,9 +348,11 @@ class _UnifiedFixturesScreenState extends State<UnifiedFixturesScreen> {
         // Filter fixtures to only include teams from the standings
         if (playerTeamIds.isNotEmpty) {
           fixtures = fixtures
-              .where((match) =>
-                  playerTeamIds.contains(match.match.homeTeamId) ||
-                  playerTeamIds.contains(match.match.awayTeamId))
+              .where(
+                (match) =>
+                    playerTeamIds.contains(match.match.homeTeamId) ||
+                    playerTeamIds.contains(match.match.awayTeamId),
+              )
               .toList();
         }
       }
@@ -608,28 +611,63 @@ class _UnifiedFixturesScreenState extends State<UnifiedFixturesScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                        if (_loadingLeagues)
-                          const Center(child: CupertinoActivityIndicator())
-                        else if (_leagues.isEmpty)
-                          Text(
-                            widget.userRole == FixturesUserRole.leagueAdmin
-                                ? 'No leagues available for your admin account.'
-                                : widget.userRole == FixturesUserRole.coach
-                                    ? 'Your team is not registered in any leagues.'
-                                    : 'You are not registered in any leagues.',
-                            style: AppTypography.callout.copyWith(
-                              color: CupertinoColors.secondaryLabel,
+                      if (_loadingLeagues)
+                        const Center(child: CupertinoActivityIndicator())
+                      else if (_leagues.isEmpty)
+                        Text(
+                          widget.userRole == FixturesUserRole.leagueAdmin
+                              ? 'No leagues available for your admin account.'
+                              : widget.userRole == FixturesUserRole.coach
+                              ? 'Your team is not registered in any leagues.'
+                              : 'You are not registered in any leagues.',
+                          style: AppTypography.callout.copyWith(
+                            color: CupertinoColors.secondaryLabel,
+                          ),
+                        )
+                      else ...[
+                        if (_leagues.length > 1) ...[
+                          AppDropdown<int>(
+                            value: _selectedLeagueIndex.clamp(
+                              0,
+                              _leagues.length - 1,
                             ),
+                            width: double.infinity,
+                            items: _leagues.asMap().entries.map((entry) {
+                              return DropdownItem<int>(
+                                value: entry.key,
+                                label: entry.value.name,
+                              );
+                            }).toList(),
+                            onChanged: (index) {
+                              setState(() {
+                                _selectedLeagueIndex = index;
+                              });
+                              _loadSeasonsForLeague(_leagues[index].leagueId);
+                            },
+                          ),
+                          const SizedBox(height: Spacing.md),
+                        ] else
+                          Text(
+                            _leagues.first.name,
+                            style: AppTypography.headline.copyWith(
+                              color: CupertinoColors.label,
+                            ),
+                          ),
+                        if (_loadingSeasons)
+                          const Padding(
+                            padding: EdgeInsets.only(top: Spacing.md),
+                            child: Center(child: CupertinoActivityIndicator()),
                           )
-                        else ...[
-                          if (_leagues.length > 1) ...[
-                            AppDropdown<int>(
-                              value: _selectedLeagueIndex.clamp(
+                        else if (_seasons.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: Spacing.md),
+                            child: AppDropdown<int>(
+                              value: _selectedSeasonIndex.clamp(
                                 0,
-                                _leagues.length - 1,
+                                _seasons.length - 1,
                               ),
                               width: double.infinity,
-                              items: _leagues.asMap().entries.map((entry) {
+                              items: _seasons.asMap().entries.map((entry) {
                                 return DropdownItem<int>(
                                   value: entry.key,
                                   label: entry.value.name,
@@ -637,107 +675,70 @@ class _UnifiedFixturesScreenState extends State<UnifiedFixturesScreen> {
                               }).toList(),
                               onChanged: (index) {
                                 setState(() {
-                                  _selectedLeagueIndex = index;
+                                  _selectedSeasonIndex = index;
                                 });
-                                _loadSeasonsForLeague(
-                                  _leagues[index].leagueId,
+                                _loadFixturesForSeason(
+                                  _seasons[index].seasonId,
                                 );
                               },
                             ),
-                            const SizedBox(height: Spacing.md),
-                          ] else
-                            Text(
-                              _leagues.first.name,
-                              style: AppTypography.headline.copyWith(
-                                color: CupertinoColors.label,
+                          )
+                        else
+                          Padding(
+                            padding: const EdgeInsets.only(top: Spacing.md),
+                            child: Text(
+                              'No seasons available for this league.',
+                              style: AppTypography.callout.copyWith(
+                                color: CupertinoColors.secondaryLabel,
                               ),
-                            ),
-                          if (_loadingSeasons)
-                            const Padding(
-                              padding: EdgeInsets.only(top: Spacing.md),
-                              child: Center(
-                                child: CupertinoActivityIndicator(),
-                              ),
-                            )
-                          else if (_seasons.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: Spacing.md),
-                              child: AppDropdown<int>(
-                                value: _selectedSeasonIndex.clamp(
-                                  0,
-                                  _seasons.length - 1,
-                                ),
-                                width: double.infinity,
-                                items: _seasons.asMap().entries.map((entry) {
-                                  return DropdownItem<int>(
-                                    value: entry.key,
-                                    label: entry.value.name,
-                                  );
-                                }).toList(),
-                                onChanged: (index) {
-                                  setState(() {
-                                    _selectedSeasonIndex = index;
-                                  });
-                                  _loadFixturesForSeason(
-                                    _seasons[index].seasonId,
-                                  );
-                                },
-                              ),
-                            )
-                          else
-                            Padding(
-                              padding: const EdgeInsets.only(top: Spacing.md),
-                              child: Text(
-                                'No seasons available for this league.',
-                                style: AppTypography.callout.copyWith(
-                                  color: CupertinoColors.secondaryLabel,
-                                ),
-                              ),
-                            ),
-                          const SizedBox(height: Spacing.lg),
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(50),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x1F000000),
-                                  blurRadius: 8,
-                                  spreadRadius: 0,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: LiquidGlassToggle(
-                              value: _showPastFixtures,
-                              onChanged: (value) {
-                                setState(() {
-                                  _showPastFixtures = value;
-                                });
-                              },
-                              activeLabel: 'Past (${pastFixtures.length})',
-                              inactiveLabel:
-                                  'Upcoming (${futureFixtures.length})',
                             ),
                           ),
-                          const SizedBox(height: Spacing.lg),
-                          if (_loadingFixtures)
-                            const Center(child: CupertinoActivityIndicator())
-                          else
-                            FixturesWidget(
-                              fixtures: displayedFixtures,
-                              onFixtureTap: _openFixtureDetails,
-                            ),
-                        ],
-                        if (_errorMessage != null) ...[
-                          const SizedBox(height: Spacing.md),
-                          Text(
-                            _errorMessage!,
-                            style: AppTypography.callout.copyWith(
-                              color: CupertinoColors.systemRed,
-                            ),
+                        const SizedBox(height: Spacing.lg),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(50),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x1F000000),
+                                blurRadius: 8,
+                                spreadRadius: 0,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
+                          child: LiquidGlassToggle(
+                            value: _showPastFixtures,
+                            onChanged: (value) {
+                              setState(() {
+                                _showPastFixtures = value;
+                              });
+                            },
+                            activeLabel: 'Past (${pastFixtures.length})',
+                            inactiveLabel:
+                                'Upcoming (${futureFixtures.length})',
+                          ),
+                        ),
+                        const SizedBox(height: Spacing.lg),
+                        if (_loadingFixtures)
+                          const Center(child: CupertinoActivityIndicator())
+                        else
+                          FixturesWidget(
+                            fixtures: displayedFixtures,
+                            onFixtureTap: _openFixtureDetails,
+                            isAdminView:
+                                widget.userRole == FixturesUserRole.leagueAdmin,
+                          ),
                       ],
+                      if (_errorMessage != null) ...[
+                        const SizedBox(height: Spacing.md),
+                        Text(
+                          _errorMessage!,
+                          style: AppTypography.callout.copyWith(
+                            color: CupertinoColors.systemRed,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: Spacing.xxxl),
                 ]),
