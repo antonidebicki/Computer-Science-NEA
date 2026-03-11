@@ -134,8 +134,9 @@ class PlayerDataCubit extends Cubit<PlayerDataState> {
       }
 
       allUpcomingFixtures.sort((a, b) {
-        if (a.match.matchDatetime == null && b.match.matchDatetime == null)
+        if (a.match.matchDatetime == null && b.match.matchDatetime == null) {
           return 0;
+        }
         if (a.match.matchDatetime == null) return 1;
         if (b.match.matchDatetime == null) return -1;
         return a.match.matchDatetime!.compareTo(b.match.matchDatetime!);
