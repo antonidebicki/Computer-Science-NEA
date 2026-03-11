@@ -20,7 +20,7 @@ class TeamDetailsPopup extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.6,
+            maxHeight: MediaQuery.of(context).size.height * 0.78,
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(40),
