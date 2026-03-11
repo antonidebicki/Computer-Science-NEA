@@ -57,191 +57,198 @@ class _FixtureDetailsPopupState extends State<FixtureDetailsPopup> {
           padding: const EdgeInsets.symmetric(horizontal: Spacing.xl),
           child: ConstrainedBox(
             constraints: BoxConstraints(maxHeight: maxDialogHeight),
-            child: AppGlassContainer(
-              padding: const EdgeInsets.all(Spacing.xl),
-              borderRadius: 32,
-              blur: 15,
-              color: CupertinoColors.white.withValues(alpha: 0.3),
-              disableShadow: true,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(40),
+              child: CupertinoPopupSurface(
+                child: Padding(
+                  padding: const EdgeInsets.all(Spacing.xl),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Match Details',
-                          style: AppTypography.title1.copyWith(
-                            color: CupertinoColors.label,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Icon(
-                          CupertinoIcons.xmark_circle_fill,
-                          color: CupertinoColors.systemGrey,
-                          size: 28,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: Spacing.lg),
-
-                  // Teams
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.fixture.homeTeamName,
-                              style: AppTypography.headline.copyWith(
-                                color: CupertinoColors.label,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: Spacing.xs),
-                            Text(
-                              'Home',
-                              style: AppTypography.caption.copyWith(
-                                color: CupertinoColors.secondaryLabel,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: Spacing.md),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: Spacing.md,
-                          vertical: Spacing.sm,
-                        ),
-                        decoration: BoxDecoration(
-                          color: CupertinoColors.systemGrey6.withValues(
-                            alpha: 0.5,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Text(
-                              '${widget.fixture.match.homeSetsWon}',
-                              style: AppTypography.largeTitle.copyWith(
-                                color: CupertinoColors.label,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(width: Spacing.sm),
-                            Text(
-                              '-',
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Match Details',
                               style: AppTypography.title1.copyWith(
-                                color: CupertinoColors.systemGrey,
-                              ),
-                            ),
-                            const SizedBox(width: Spacing.sm),
-                            Text(
-                              '${widget.fixture.match.awaySetsWon}',
-                              style: AppTypography.largeTitle.copyWith(
                                 color: CupertinoColors.label,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ],
+                          ),
+                          CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Icon(
+                              CupertinoIcons.xmark_circle_fill,
+                              color: CupertinoColors.systemGrey,
+                              size: 28,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: Spacing.lg),
+
+                      // Teams
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.fixture.homeTeamName,
+                                  style: AppTypography.headline.copyWith(
+                                    color: CupertinoColors.label,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: Spacing.xs),
+                                Text(
+                                  'Home',
+                                  style: AppTypography.caption.copyWith(
+                                    color: CupertinoColors.secondaryLabel,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: Spacing.md),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: Spacing.md,
+                              vertical: Spacing.sm,
+                            ),
+                            decoration: BoxDecoration(
+                              color: CupertinoColors.systemGrey6.withValues(
+                                alpha: 0.5,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  '${widget.fixture.match.homeSetsWon}',
+                                  style: AppTypography.largeTitle.copyWith(
+                                    color: CupertinoColors.label,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: Spacing.sm),
+                                Text(
+                                  '-',
+                                  style: AppTypography.title1.copyWith(
+                                    color: CupertinoColors.systemGrey,
+                                  ),
+                                ),
+                                const SizedBox(width: Spacing.sm),
+                                Text(
+                                  '${widget.fixture.match.awaySetsWon}',
+                                  style: AppTypography.largeTitle.copyWith(
+                                    color: CupertinoColors.label,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: Spacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  widget.fixture.awayTeamName,
+                                  style: AppTypography.headline.copyWith(
+                                    color: CupertinoColors.label,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.right,
+                                ),
+                                const SizedBox(height: Spacing.xs),
+                                Text(
+                                  'Away',
+                                  style: AppTypography.caption.copyWith(
+                                    color: CupertinoColors.secondaryLabel,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: Spacing.lg),
+
+                      // Date and Venue
+                      if (widget.fixture.match.matchDatetime != null) ...[
+                        _buildInfoRow(
+                          icon: CupertinoIcons.calendar,
+                          label: 'Date',
+                          value: _formatDate(
+                            widget.fixture.match.matchDatetime!,
+                          ),
+                        ),
+                        const SizedBox(height: Spacing.sm),
+                        _buildInfoRow(
+                          icon: CupertinoIcons.clock,
+                          label: 'Time',
+                          value: _formatTime(
+                            widget.fixture.match.matchDatetime!,
+                          ),
+                        ),
+                        const SizedBox(height: Spacing.sm),
+                      ],
+
+                      if (widget.fixture.match.venue != null) ...[
+                        _buildInfoRow(
+                          icon: CupertinoIcons.location_solid,
+                          label: 'Venue',
+                          value: widget.fixture.match.venue!,
+                        ),
+                        const SizedBox(height: Spacing.sm),
+                      ],
+
+                      _buildInfoRow(
+                        icon: CupertinoIcons.info_circle,
+                        label: 'Status',
+                        value: _getStatusText(
+                          widget.fixture.match.status.value,
                         ),
                       ),
-                      const SizedBox(width: Spacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              widget.fixture.awayTeamName,
-                              style: AppTypography.headline.copyWith(
-                                color: CupertinoColors.label,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.right,
-                            ),
-                            const SizedBox(height: Spacing.xs),
-                            Text(
-                              'Away',
-                              style: AppTypography.caption.copyWith(
-                                color: CupertinoColors.secondaryLabel,
-                              ),
-                            ),
-                          ],
+
+                      const SizedBox(height: Spacing.lg),
+                      const Divider(),
+                      const SizedBox(height: Spacing.lg),
+
+                      // Keep set rows in their own scroll region to avoid dialog overflow.
+                      Text(
+                        'Set Scores',
+                        style: AppTypography.headline.copyWith(
+                          color: CupertinoColors.label,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: Spacing.md),
+                      Flexible(child: _buildSetScoresContent()),
+
+                      const SizedBox(height: Spacing.lg),
+
+                      // Close Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: CupertinoButton.filled(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Close'),
                         ),
                       ),
                     ],
                   ),
-
-                  const SizedBox(height: Spacing.lg),
-
-                  // Date and Venue
-                  if (widget.fixture.match.matchDatetime != null) ...[
-                    _buildInfoRow(
-                      icon: CupertinoIcons.calendar,
-                      label: 'Date',
-                      value: _formatDate(widget.fixture.match.matchDatetime!),
-                    ),
-                    const SizedBox(height: Spacing.sm),
-                    _buildInfoRow(
-                      icon: CupertinoIcons.clock,
-                      label: 'Time',
-                      value: _formatTime(widget.fixture.match.matchDatetime!),
-                    ),
-                    const SizedBox(height: Spacing.sm),
-                  ],
-
-                  if (widget.fixture.match.venue != null) ...[
-                    _buildInfoRow(
-                      icon: CupertinoIcons.location_solid,
-                      label: 'Venue',
-                      value: widget.fixture.match.venue!,
-                    ),
-                    const SizedBox(height: Spacing.sm),
-                  ],
-
-                  _buildInfoRow(
-                    icon: CupertinoIcons.info_circle,
-                    label: 'Status',
-                    value: _getStatusText(widget.fixture.match.status.value),
-                  ),
-
-                  const SizedBox(height: Spacing.lg),
-                  const Divider(),
-                  const SizedBox(height: Spacing.lg),
-
-                  // Keep set rows in their own scroll region to avoid dialog overflow.
-                  Text(
-                    'Set Scores',
-                    style: AppTypography.headline.copyWith(
-                      color: CupertinoColors.label,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: Spacing.md),
-                  Flexible(child: _buildSetScoresContent()),
-
-                  const SizedBox(height: Spacing.lg),
-
-                  // Close Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: CupertinoButton.filled(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Close'),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
